@@ -3,7 +3,8 @@ import { useQuery } from '@tanstack/react-query'
 import { employeesApi } from '../../api/index.js'
 import Badge from '../../components/common/Badge.jsx'
 import { PageLoader } from '../../components/common/LoadingSpinner.jsx'
-import { ArrowLeftIcon, EnvelopeIcon, PhoneIcon, MapPinIcon } from '@heroicons/react/24/outline'
+import { ArrowLeftIcon, EnvelopeIcon, PhoneIcon, MapPinIcon, BanknotesIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline'
+import { useAuth } from '../../contexts/AuthContext.jsx'
 
 function InfoRow({ label, value }) {
   if (!value) return null
@@ -17,6 +18,8 @@ function InfoRow({ label, value }) {
 
 export default function EmployeeDetailPage() {
   const { id } = useParams()
+  const { isAdmin, isFinance } = useAuth()
+  const canViewBankSalary = isAdmin() || isFinance()
 
   const { data, isLoading } = useQuery({
     queryKey: ['employee', id],
@@ -88,6 +91,69 @@ export default function EmployeeDetailPage() {
           </dl>
         </div>
       </div>
+
+      {/* Bank & Salary Info — Finance/Admin only */}
+      {canViewBankSalary && (
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          {/* Bank Account */}
+          <div className="rounded-lg bg-white shadow p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <BanknotesIcon className="h-5 w-5 text-primary-600" />
+              <h2 className="text-base font-semibold text-gray-900">Bank Account</h2>
+            </div>
+            {emp.bankAccountNumber ? (
+              <dl className="space-y-3">
+                {[
+                  ['Account Holder', emp.bankAccountHolder],
+                  ['Bank Name', emp.bankName],
+                  ['Account Number', emp.bankAccountNumber ? `****${emp.bankAccountNumber.slice(-4)}` : null],
+                  ['IFSC Code', emp.bankIFSC],
+                  ['PAN Number', emp.panNumber],
+                ].map(([label, value]) => value ? (
+                  <div key={label} className="flex justify-between text-sm border-b border-gray-50 pb-2">
+                    <span className="text-gray-500">{label}</span>
+                    <span className="font-medium text-gray-900">{value}</span>
+                  </div>
+                ) : null)}
+              </dl>
+            ) : (
+              <div className="flex items-center gap-2 rounded-lg bg-amber-50 border border-amber-200 p-3 text-sm text-amber-700">
+                <ExclamationTriangleIcon className="h-4 w-4 flex-shrink-0" />
+                No bank details on file. <Link to={`/employees/${id}/edit`} className="underline ml-1">Update profile</Link>
+              </div>
+            )}
+          </div>
+
+          {/* Salary status */}
+          <div className="rounded-lg bg-white shadow p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <BanknotesIcon className="h-5 w-5 text-green-600" />
+              <h2 className="text-base font-semibold text-gray-900">Salary Structure</h2>
+            </div>
+            {emp.salaryStructures?.length > 0 ? (
+              (() => {
+                const s = emp.salaryStructures[0]
+                return (
+                  <dl className="space-y-2 text-sm">
+                    {[['Basic Salary', s.basicSalary], ['HRA', s.hra], ['Gross Salary', s.grossSalary], ['Total Deductions', s.totalDeductions], ['Net Pay', s.netSalary], ['CTC', s.ctc]].map(([label, val]) => (
+                      <div key={label} className={`flex justify-between border-b border-gray-50 pb-1.5 ${['Gross Salary','Net Pay','CTC'].includes(label) ? 'font-semibold' : ''}`}>
+                        <span className="text-gray-500">{label}</span>
+                        <span className={label === 'Net Pay' ? 'text-primary-600' : label === 'Total Deductions' ? 'text-red-600' : 'text-gray-900'}>₹{Number(val||0).toLocaleString('en-IN')}</span>
+                      </div>
+                    ))}
+                  </dl>
+                )
+              })()
+            ) : (
+              <div className="flex items-center gap-2 rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-700">
+                <ExclamationTriangleIcon className="h-4 w-4 flex-shrink-0" />
+                No salary structure set. This employee will be skipped during payroll processing.
+                <Link to="/payroll" className="underline ml-1">Set up →</Link>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Subordinates */}
       {emp.subordinates?.length > 0 && (

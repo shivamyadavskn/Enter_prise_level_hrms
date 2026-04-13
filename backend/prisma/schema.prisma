@@ -140,6 +140,11 @@ model Employee {
   designationId         Int?
   managerId             Int?
   profilePicture        String?
+  bankName              String?
+  bankAccountNumber     String?
+  bankIFSC              String?
+  bankAccountHolder     String?
+  panNumber             String?
   createdAt             DateTime         @default(now())
   updatedAt             DateTime         @updatedAt
 

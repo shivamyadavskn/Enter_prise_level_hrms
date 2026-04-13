@@ -21,6 +21,11 @@ export const createEmployeeSchema = z.object({
   departmentId: z.number().int().positive().optional(),
   designationId: z.number().int().positive().optional(),
   managerId: z.number().int().positive().optional(),
+  bankName: z.string().max(100).optional(),
+  bankAccountNumber: z.string().max(30).optional(),
+  bankIFSC: z.string().max(15).optional(),
+  bankAccountHolder: z.string().max(100).optional(),
+  panNumber: z.string().max(10).optional(),
 });
 
 export const updateEmployeeSchema = createEmployeeSchema
