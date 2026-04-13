@@ -92,7 +92,7 @@ export const getAttendance = async (req, res) => {
 
     if (req.user.role === "EMPLOYEE") {
       const emp = await prisma.employee.findFirst({ where: { userId: req.user.id } });
-      if (!emp) return R.notFound(res, "Employee not found");
+      if (!emp) return R.paginated(res, [], 0, page, limit);
       where.employeeId = emp.id;
     } else if (req.user.role === "MANAGER") {
       const mgr = await prisma.employee.findFirst({ where: { userId: req.user.id } });
@@ -135,7 +135,7 @@ export const getAttendance = async (req, res) => {
 export const getTodayStatus = async (req, res) => {
   try {
     const emp = await prisma.employee.findFirst({ where: { userId: req.user.id } });
-    if (!emp) return R.notFound(res, "Employee profile not found");
+    if (!emp) return R.success(res, { status: "NO_PROFILE", date: new Date() });
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -318,7 +318,7 @@ export const getAttendanceSummary = async (req, res) => {
     let empId = Number(employeeId) || null;
     if (!empId) {
       const emp = await prisma.employee.findFirst({ where: { userId: req.user.id } });
-      if (!emp) return R.notFound(res, "Employee not found");
+      if (!emp) return R.success(res, { month: m, year: y, totalDays: 0, present: 0, absent: 0, halfDay: 0, leave: 0, wfh: 0, holiday: 0, totalHours: '0.00', noProfile: true });
       empId = emp.id;
     }
 

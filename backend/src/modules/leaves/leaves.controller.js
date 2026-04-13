@@ -58,7 +58,7 @@ export const getLeaveBalance = async (req, res) => {
     let employeeId = Number(req.query.employeeId) || null;
     if (!employeeId) {
       const emp = await prisma.employee.findFirst({ where: { userId: req.user.id } });
-      if (!emp) return R.notFound(res, "Employee profile not found");
+      if (!emp) return R.success(res, []);
       employeeId = emp.id;
     }
 
@@ -145,7 +145,7 @@ export const getLeaves = async (req, res) => {
 
     if (req.user.role === "EMPLOYEE") {
       const emp = await prisma.employee.findFirst({ where: { userId: req.user.id } });
-      if (!emp) return R.notFound(res, "Employee not found");
+      if (!emp) return R.paginated(res, [], 0, page, limit);
       where.employeeId = emp.id;
     } else if (req.user.role === "MANAGER") {
       const mgr = await prisma.employee.findFirst({ where: { userId: req.user.id } });

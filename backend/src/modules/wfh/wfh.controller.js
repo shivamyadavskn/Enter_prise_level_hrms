@@ -8,7 +8,7 @@ export const getWfhRequests = async (req, res) => {
 
     if (req.user.role === "EMPLOYEE") {
       const emp = await prisma.employee.findFirst({ where: { userId: req.user.id } });
-      if (!emp) return R.notFound(res, "Employee not found");
+      if (!emp) return R.paginated(res, [], 0, page, limit);
       where.employeeId = emp.id;
     } else if (req.user.role === "MANAGER") {
       const mgr = await prisma.employee.findFirst({ where: { userId: req.user.id } });
