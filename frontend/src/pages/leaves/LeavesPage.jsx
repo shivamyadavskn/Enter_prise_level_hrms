@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { leavesApi } from '../../api/index.js'
+import { leavesApi, employeesApi } from '../../api/index.js'
 import { useAuth } from '../../contexts/AuthContext.jsx'
 import Badge from '../../components/common/Badge.jsx'
 import Modal from '../../components/common/Modal.jsx'
@@ -12,11 +12,27 @@ import toast from 'react-hot-toast'
 import { format } from 'date-fns'
 
 function ApplyLeaveModal({ open, onClose, leaveTypes, onSubmit, loading }) {
-  const [form, setForm] = useState({ leaveTypeId: '', startDate: '', endDate: '', reason: '' })
+  const [form, setForm] = useState({ leaveTypeId: '', startDate: '', endDate: '', reason: '', approverId: '' })
   const f = (k) => (e) => setForm({ ...form, [k]: e.target.value })
+
+  const { data: approversData } = useQuery({
+    queryKey: ['approvers-list'],
+    queryFn: () => employeesApi.getAll({ limit: 100 }),
+    enabled: open,
+  })
+  const approvers = (approversData?.data?.data || []).filter(e =>
+    ['MANAGER', 'ADMIN', 'SUPER_ADMIN'].includes(e.user?.role)
+  )
+
   return (
     <Modal open={open} onClose={onClose} title="Apply for Leave">
-      <form onSubmit={(e) => { e.preventDefault(); onSubmit({ ...form, leaveTypeId: Number(form.leaveTypeId) }) }} className="space-y-4">
+      <form onSubmit={(e) => {
+        e.preventDefault()
+        const payload = { ...form, leaveTypeId: Number(form.leaveTypeId) }
+        if (!payload.approverId) delete payload.approverId
+        else payload.approverId = Number(payload.approverId)
+        onSubmit(payload)
+      }} className="space-y-4">
         <div>
           <label className="block text-sm font-medium text-gray-700">Leave Type *</label>
           <select required value={form.leaveTypeId} onChange={f('leaveTypeId')} className="mt-1 block w-full rounded-md border-0 py-1.5 pl-3 pr-8 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-primary-600 sm:text-sm">
@@ -37,6 +53,13 @@ function ApplyLeaveModal({ open, onClose, leaveTypes, onSubmit, loading }) {
         <div>
           <label className="block text-sm font-medium text-gray-700">Reason *</label>
           <textarea required rows={3} value={form.reason} onChange={f('reason')} className="mt-1 block w-full rounded-md border-0 py-1.5 px-3 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-primary-600 sm:text-sm" />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Send Approval To <span className="text-gray-400 font-normal">(optional — defaults to your manager)</span></label>
+          <select value={form.approverId} onChange={f('approverId')} className="mt-1 block w-full rounded-md border-0 py-1.5 pl-3 pr-8 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-primary-600 sm:text-sm">
+            <option value="">Auto (Reporting Manager / HR)</option>
+            {approvers.map((e) => <option key={e.id} value={e.id}>{e.firstName} {e.lastName} — {e.user?.role?.replace('_',' ')}</option>)}
+          </select>
         </div>
         <div className="flex justify-end gap-3">
           <button type="button" onClick={onClose} className="rounded-md px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50">Cancel</button>

@@ -51,10 +51,17 @@ export const getUserById = async (req, res) => {
 
 export const createUser = async (req, res) => {
   try {
-    const { username, email, password, role } = req.body;
+    const { email, password, role } = req.body;
+    // Auto-generate username from email prefix if not provided
+    const baseUsername = (req.body.username || email.split("@")[0]).toLowerCase().replace(/[^a-z0-9]/g, "");
+    let username = baseUsername;
+    let suffix = 1;
+    while (await prisma.user.findFirst({ where: { username } })) {
+      username = `${baseUsername}${suffix++}`;
+    }
 
-    const existing = await prisma.user.findFirst({ where: { OR: [{ email }, { username }] } });
-    if (existing) return R.badRequest(res, "Email or username already exists");
+    const existing = await prisma.user.findFirst({ where: { email } });
+    if (existing) return R.badRequest(res, "Email already exists");
 
     if (role === "SUPER_ADMIN" && req.user.role !== "SUPER_ADMIN") {
       return R.forbidden(res, "Cannot assign SUPER_ADMIN role");

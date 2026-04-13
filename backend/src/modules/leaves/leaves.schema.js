@@ -5,6 +5,7 @@ export const applyLeaveSchema = z.object({
   startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Format: YYYY-MM-DD"),
   endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Format: YYYY-MM-DD"),
   reason: z.string().min(1, "Reason is required"),
+  approverId: z.number().int().positive().optional(),
 });
 
 export const approveRejectSchema = z.object({

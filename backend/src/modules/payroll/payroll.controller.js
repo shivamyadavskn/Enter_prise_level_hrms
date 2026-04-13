@@ -3,6 +3,23 @@ import * as R from "../../utils/response.js";
 
 // ── Salary Structures ─────────────────────────────────────────────────────────
 
+export const getMissingSalaryStructures = async (req, res) => {
+  try {
+    const allActive = await prisma.employee.findMany({
+      where: { employmentStatus: { in: ["ACTIVE", "PROBATION"] } },
+      include: { salaryStructures: { where: { isActive: true }, take: 1 }, department: { select: { name: true } }, designation: { select: { name: true } } },
+    });
+    const missing = allActive.filter((e) => e.salaryStructures.length === 0).map((e) => ({
+      id: e.id, employeeCode: e.employeeCode, name: `${e.firstName} ${e.lastName}`,
+      department: e.department?.name, designation: e.designation?.name,
+      dateOfJoining: e.dateOfJoining, employmentStatus: e.employmentStatus,
+    }));
+    return R.success(res, missing, `${missing.length} employee(s) missing salary structure`);
+  } catch (err) {
+    return R.error(res, err.message);
+  }
+};
+
 export const getSalaryStructure = async (req, res) => {
   try {
     const employeeId = Number(req.params.employeeId);
@@ -79,9 +96,13 @@ export const processPayroll = async (req, res) => {
     });
 
     const results = [];
+    const skipped = [];
 
     for (const emp of employees) {
-      if (!emp.salaryStructures.length) continue;
+      if (!emp.salaryStructures.length) {
+        skipped.push({ id: emp.id, name: `${emp.firstName} ${emp.lastName}`, employeeCode: emp.employeeCode });
+        continue;
+      }
 
       const salary = emp.salaryStructures[0];
 
@@ -119,7 +140,10 @@ export const processPayroll = async (req, res) => {
       results.push(payroll);
     }
 
-    return R.success(res, { processed: results.length, payrolls: results }, `Payroll processed for ${results.length} employees`);
+    const msg = skipped.length
+      ? `Payroll processed for ${results.length} employee(s). ${skipped.length} skipped (no salary structure): ${skipped.map((s) => s.name).join(", ")}`
+      : `Payroll processed for ${results.length} employee(s)`;
+    return R.success(res, { processed: results.length, skipped, payrolls: results }, msg);
   } catch (err) {
     return R.error(res, err.message);
   }

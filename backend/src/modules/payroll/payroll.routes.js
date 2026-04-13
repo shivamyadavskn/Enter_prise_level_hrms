@@ -1,6 +1,6 @@
 import { Router } from "express";
 import {
-  getSalaryStructure, upsertSalaryStructure,
+  getSalaryStructure, upsertSalaryStructure, getMissingSalaryStructures,
   processPayroll, getPayrolls, getPayrollById, getMyPayslips,
   updatePaymentStatus, getPayrollSummary,
 } from "./payroll.controller.js";
@@ -15,6 +15,7 @@ router.use(authenticate);
 router.get("/my-payslips", getMyPayslips);
 router.get("/summary", authorize("SUPER_ADMIN", "ADMIN", "FINANCE"), getPayrollSummary);
 
+router.get("/salary-structure/missing", authorize("SUPER_ADMIN", "ADMIN", "FINANCE"), getMissingSalaryStructures);
 router.get("/salary-structure/:employeeId", getSalaryStructure);
 router.post("/salary-structure", authorize("SUPER_ADMIN", "ADMIN", "FINANCE"), validate(salaryStructureSchema), upsertSalaryStructure);
 

@@ -187,7 +187,7 @@ export const getLeaves = async (req, res) => {
 
 export const applyLeave = async (req, res) => {
   try {
-    const { leaveTypeId, startDate, endDate, reason } = req.body;
+    const { leaveTypeId, startDate, endDate, reason, approverId } = req.body;
 
     const emp = await prisma.employee.findFirst({ where: { userId: req.user.id } });
     if (!emp) return R.notFound(res, "Employee profile not found");
@@ -230,7 +230,13 @@ export const applyLeave = async (req, res) => {
       include: { leaveType: true },
     });
 
-    if (emp.managerId) {
+    if (approverId) {
+      // Employee explicitly chose an approver
+      const approverEmp = await prisma.employee.findUnique({ where: { id: approverId }, include: { user: true } });
+      if (approverEmp?.user) {
+        await notifyUser(approverEmp.user.id, "LEAVE_REQUEST", "New Leave Request", `${emp.firstName} ${emp.lastName} applied for ${totalDays} day(s) leave (sent to you for approval)`);
+      }
+    } else if (emp.managerId) {
       // Notify direct manager
       const manager = await prisma.employee.findUnique({ where: { id: emp.managerId }, include: { user: true } });
       if (manager?.user) {

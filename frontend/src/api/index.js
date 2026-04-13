@@ -96,6 +96,7 @@ export const payrollApi = {
   process: (data) => api.post('/payroll/process', data),
   updateStatus: (id, data) => api.patch(`/payroll/${id}/payment-status`, data),
   getSalaryStructure: (empId) => api.get(`/payroll/salary-structure/${empId}`),
+  getMissingSalary: () => api.get('/payroll/salary-structure/missing'),
   upsertSalaryStructure: (data) => api.post('/payroll/salary-structure', data),
 }
 
