@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.env
+.env.local
+*.log
+logs/
+uploads/
+sample_tailwindcss_sample_refernce_tailwindcss_v3_plus_memnber/

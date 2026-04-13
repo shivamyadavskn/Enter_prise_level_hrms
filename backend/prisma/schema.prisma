@@ -1,0 +1,436 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ────────────────────────────────────────────────────────────────────
+
+enum UserRole {
+  SUPER_ADMIN
+  ADMIN
+  MANAGER
+  EMPLOYEE
+  FINANCE
+}
+
+enum EmploymentStatus {
+  ACTIVE
+  PROBATION
+  RESIGNED
+  TERMINATED
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum RequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  HALF_DAY
+  LEAVE
+  WFH
+  HOLIDAY
+}
+
+enum WfhType {
+  FULL_DAY
+  HALF_DAY
+  RECURRING
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSED
+  PAID
+}
+
+enum ReviewType {
+  PROBATION
+  QUARTERLY
+  ANNUAL
+  MID_YEAR
+}
+
+enum ReviewStatus {
+  PENDING
+  COMPLETED
+  ACKNOWLEDGED
+}
+
+enum DocumentType {
+  ID_PROOF
+  ADDRESS_PROOF
+  EDUCATION
+  EXPERIENCE
+  OFFER_LETTER
+  CONTRACT
+  PAYSLIP
+  OTHER
+}
+
+// ─── Models ───────────────────────────────────────────────────────────────────
+
+model User {
+  id           Int       @id @default(autoincrement())
+  username     String    @unique
+  email        String    @unique
+  passwordHash String
+  role         UserRole  @default(EMPLOYEE)
+  isActive     Boolean   @default(true)
+  lastLogin    DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  employee      Employee?
+  notifications Notification[]
+  uploadedDocs  Document[]     @relation("UploadedBy")
+  refreshTokens RefreshToken[]
+
+  @@map("users")
+}
+
+model RefreshToken {
+  id        Int      @id @default(autoincrement())
+  token     String   @unique
+  userId    Int
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("refresh_tokens")
+}
+
+model Employee {
+  id                    Int              @id @default(autoincrement())
+  userId                Int              @unique
+  employeeCode          String           @unique
+  firstName             String
+  lastName              String?
+  email                 String?
+  phone                 String?
+  dateOfBirth           DateTime?
+  gender                Gender?
+  address               String?
+  city                  String?
+  state                 String?
+  country               String?
+  postalCode            String?
+  emergencyContactName  String?
+  emergencyContactPhone String?
+  dateOfJoining         DateTime?
+  dateOfConfirmation    DateTime?
+  dateOfLeaving         DateTime?
+  employmentStatus      EmploymentStatus @default(PROBATION)
+  departmentId          Int?
+  designationId         Int?
+  managerId             Int?
+  profilePicture        String?
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
+
+  user              User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  department        Department?  @relation("EmpDept", fields: [departmentId], references: [id])
+  designation       Designation? @relation(fields: [designationId], references: [id])
+  manager           Employee?    @relation("ManagerSubordinates", fields: [managerId], references: [id])
+  subordinates      Employee[]   @relation("ManagerSubordinates")
+  headOfDepartments Department[] @relation("DeptHead")
+
+  leaveBalances           LeaveBalance[]
+  leaveApplications       LeaveApplication[]
+  leaveWorkflowApprovals  LeaveApprovalWorkflow[] @relation("WorkflowApprover")
+  leaveFinalApprovals     LeaveApplication[]      @relation("LeaveApprover")
+  attendanceRecords       Attendance[]
+  regularizationRequests  AttendanceRegularization[]
+  regularizationApprovals AttendanceRegularization[] @relation("RegApprover")
+  wfhRequests             WfhRequest[]
+  wfhApprovals            WfhRequest[]            @relation("WfhApprover")
+  salaryStructures        SalaryStructure[]
+  payrolls                Payroll[]
+  reviewsAsEmployee       PerformanceReview[]     @relation("ReviewEmployee")
+  reviewsAsReviewer       PerformanceReview[]     @relation("ReviewReviewer")
+  documents               Document[]
+
+  @@map("employees")
+}
+
+model Department {
+  id          Int      @id @default(autoincrement())
+  name        String
+  code        String   @unique
+  headId      Int?
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  head      Employee?  @relation("DeptHead", fields: [headId], references: [id])
+  employees Employee[] @relation("EmpDept")
+
+  @@map("departments")
+}
+
+model Designation {
+  id          Int        @id @default(autoincrement())
+  name        String
+  level       Int?
+  description String?
+  isActive    Boolean    @default(true)
+  createdAt   DateTime   @default(now())
+
+  employees Employee[]
+
+  @@map("designations")
+}
+
+model LeaveType {
+  id                  Int      @id @default(autoincrement())
+  name                String
+  code                String   @unique
+  annualQuota         Int
+  carryForwardAllowed Boolean  @default(false)
+  maxCarryForward     Int?
+  encashmentAllowed   Boolean  @default(false)
+  requiresDocument    Boolean  @default(false)
+  isActive            Boolean  @default(true)
+  createdAt           DateTime @default(now())
+
+  leaveBalances     LeaveBalance[]
+  leaveApplications LeaveApplication[]
+
+  @@map("leave_types")
+}
+
+model LeaveBalance {
+  id             Int      @id @default(autoincrement())
+  employeeId     Int
+  leaveTypeId    Int
+  year           Int
+  openingBalance Float    @default(0)
+  accrued        Float    @default(0)
+  consumed       Float    @default(0)
+  available      Float    @default(0)
+  updatedAt      DateTime @updatedAt
+
+  employee  Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  leaveType LeaveType @relation(fields: [leaveTypeId], references: [id])
+
+  @@unique([employeeId, leaveTypeId, year])
+  @@map("leave_balances")
+}
+
+model LeaveApplication {
+  id              Int           @id @default(autoincrement())
+  employeeId      Int
+  leaveTypeId     Int
+  startDate       DateTime      @db.Date
+  endDate         DateTime      @db.Date
+  totalDays       Float
+  reason          String?
+  documentPath    String?
+  status          RequestStatus @default(PENDING)
+  appliedOn       DateTime      @default(now())
+  approvedById    Int?
+  approvedOn      DateTime?
+  rejectionReason String?
+
+  employee         Employee              @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  leaveType        LeaveType             @relation(fields: [leaveTypeId], references: [id])
+  approvedBy       Employee?             @relation("LeaveApprover", fields: [approvedById], references: [id])
+  approvalWorkflow LeaveApprovalWorkflow[]
+
+  @@map("leave_applications")
+}
+
+model LeaveApprovalWorkflow {
+  id            Int           @id @default(autoincrement())
+  leaveId       Int
+  approverId    Int
+  approvalLevel Int
+  status        RequestStatus @default(PENDING)
+  comments      String?
+  actionDate    DateTime?
+
+  leave    LeaveApplication @relation(fields: [leaveId], references: [id], onDelete: Cascade)
+  approver Employee         @relation("WorkflowApprover", fields: [approverId], references: [id])
+
+  @@map("leave_approval_workflow")
+}
+
+model Attendance {
+  id                   Int              @id @default(autoincrement())
+  employeeId           Int
+  date                 DateTime         @db.Date
+  clockIn              DateTime?
+  clockOut             DateTime?
+  totalHours           Float?
+  status               AttendanceStatus @default(ABSENT)
+  isRegularized        Boolean          @default(false)
+  regularizationReason String?
+  locationIn           String?
+  locationOut          String?
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+
+  employee        Employee                   @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  regularizations AttendanceRegularization[]
+
+  @@unique([employeeId, date])
+  @@map("attendance")
+}
+
+model AttendanceRegularization {
+  id                 Int           @id @default(autoincrement())
+  attendanceId       Int
+  employeeId         Int
+  requestedClockIn   DateTime?
+  requestedClockOut  DateTime?
+  reason             String?
+  proofDocument      String?
+  status             RequestStatus @default(PENDING)
+  requestedOn        DateTime      @default(now())
+  approvedById       Int?
+  approvedOn         DateTime?
+  rejectionReason    String?
+
+  attendance Attendance @relation(fields: [attendanceId], references: [id], onDelete: Cascade)
+  employee   Employee   @relation(fields: [employeeId], references: [id])
+  approvedBy Employee?  @relation("RegApprover", fields: [approvedById], references: [id])
+
+  @@map("attendance_regularization")
+}
+
+model WfhRequest {
+  id              Int           @id @default(autoincrement())
+  employeeId      Int
+  startDate       DateTime      @db.Date
+  endDate         DateTime      @db.Date
+  wfhType         WfhType       @default(FULL_DAY)
+  reason          String?
+  status          RequestStatus @default(PENDING)
+  appliedOn       DateTime      @default(now())
+  approvedById    Int?
+  approvedOn      DateTime?
+  rejectionReason String?
+
+  employee   Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  approvedBy Employee? @relation("WfhApprover", fields: [approvedById], references: [id])
+
+  @@map("wfh_requests")
+}
+
+model SalaryStructure {
+  id                  Int      @id @default(autoincrement())
+  employeeId          Int
+  effectiveFrom       DateTime @db.Date
+  basicSalary         Float    @default(0)
+  hra                 Float    @default(0)
+  conveyanceAllowance Float    @default(0)
+  medicalAllowance    Float    @default(0)
+  specialAllowance    Float    @default(0)
+  grossSalary         Float    @default(0)
+  pfEmployee          Float    @default(0)
+  pfEmployer          Float    @default(0)
+  professionalTax     Float    @default(0)
+  tds                 Float    @default(0)
+  totalDeductions     Float    @default(0)
+  netSalary           Float    @default(0)
+  ctc                 Float    @default(0)
+  isActive            Boolean  @default(true)
+  createdAt           DateTime @default(now())
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@map("salary_structures")
+}
+
+model Payroll {
+  id              Int           @id @default(autoincrement())
+  employeeId      Int
+  month           Int
+  year            Int
+  workingDays     Int           @default(0)
+  presentDays     Float         @default(0)
+  paidLeaves      Float         @default(0)
+  unpaidLeaves    Float         @default(0)
+  wfhDays         Int           @default(0)
+  overtimeHours   Float         @default(0)
+  grossSalary     Float         @default(0)
+  totalDeductions Float         @default(0)
+  netSalary       Float         @default(0)
+  paymentDate     DateTime?     @db.Date
+  paymentStatus   PaymentStatus @default(PENDING)
+  payslipPath     String?
+  createdAt       DateTime      @default(now())
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([employeeId, month, year])
+  @@map("payroll")
+}
+
+model PerformanceReview {
+  id                 Int          @id @default(autoincrement())
+  employeeId         Int
+  reviewerId         Int
+  reviewPeriodStart  DateTime     @db.Date
+  reviewPeriodEnd    DateTime     @db.Date
+  reviewType         ReviewType
+  selfRating         Float?
+  managerRating      Float?
+  finalRating        Float?
+  strengths          String?
+  areasOfImprovement String?
+  goalsAchieved      String?
+  comments           String?
+  status             ReviewStatus @default(PENDING)
+  reviewDate         DateTime?    @db.Date
+  createdAt          DateTime     @default(now())
+
+  employee Employee @relation("ReviewEmployee", fields: [employeeId], references: [id], onDelete: Cascade)
+  reviewer Employee @relation("ReviewReviewer", fields: [reviewerId], references: [id])
+
+  @@map("performance_reviews")
+}
+
+model Document {
+  id           Int          @id @default(autoincrement())
+  employeeId   Int
+  documentType DocumentType @default(OTHER)
+  documentName String
+  filePath     String
+  uploadedById Int
+  uploadedOn   DateTime     @default(now())
+
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  uploadedBy User     @relation("UploadedBy", fields: [uploadedById], references: [id])
+
+  @@map("documents")
+}
+
+model Notification {
+  id               Int      @id @default(autoincrement())
+  userId           Int
+  notificationType String
+  title            String
+  message          String
+  isRead           Boolean  @default(false)
+  createdAt        DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
