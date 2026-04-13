@@ -7,7 +7,7 @@ import Modal from '../../components/common/Modal.jsx'
 import Pagination from '../../components/common/Pagination.jsx'
 import EmptyState from '../../components/common/EmptyState.jsx'
 import { PageLoader } from '../../components/common/LoadingSpinner.jsx'
-import { ClockIcon, CheckIcon, XMarkIcon, ArrowPathIcon } from '@heroicons/react/24/outline'
+import { ClockIcon, CheckIcon, XMarkIcon, ArrowPathIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline'
 import toast from 'react-hot-toast'
 import { format } from 'date-fns'
 
@@ -42,8 +42,22 @@ export default function AttendancePage() {
 
   const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
 
+  const noProfile = today?.status === 'NO_PROFILE'
+
   return (
     <div className="space-y-6">
+      {noProfile && (
+        <div className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4">
+          <ExclamationTriangleIcon className="h-5 w-5 text-amber-500 mt-0.5 flex-shrink-0" />
+          <div>
+            <p className="text-sm font-semibold text-amber-800">Your employee profile is not set up yet.</p>
+            <p className="text-sm text-amber-700 mt-0.5">
+              Ask your HR administrator to complete your onboarding (Step 2 — Employee Details).
+              Until then, attendance, leaves, and payroll features are unavailable.
+            </p>
+          </div>
+        </div>
+      )}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Attendance</h1>
