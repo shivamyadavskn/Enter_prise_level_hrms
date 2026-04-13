@@ -82,6 +82,12 @@ enum DocumentType {
   OTHER
 }
 
+enum HolidayType {
+  PUBLIC
+  OPTIONAL
+  RESTRICTED
+}
+
 // ─── Models ───────────────────────────────────────────────────────────────────
 
 model User {
@@ -438,4 +444,16 @@ model Notification {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("notifications")
+}
+
+model Holiday {
+  id        Int         @id @default(autoincrement())
+  name      String
+  date      DateTime
+  type      HolidayType @default(PUBLIC)
+  isActive  Boolean     @default(true)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  @@map("holidays")
 }

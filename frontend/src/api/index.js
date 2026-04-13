@@ -100,6 +100,14 @@ export const payrollApi = {
   upsertSalaryStructure: (data) => api.post('/payroll/salary-structure', data),
 }
 
+// ── Holidays ──────────────────────────────────────────────────────────────────
+export const holidaysApi = {
+  getAll: (params) => api.get('/holidays', { params }),
+  create: (data) => api.post('/holidays', data),
+  update: (id, data) => api.put(`/holidays/${id}`, data),
+  delete: (id) => api.delete(`/holidays/${id}`),
+}
+
 // ── Performance ───────────────────────────────────────────────────────────────
 export const performanceApi = {
   getAll: (params) => api.get('/performance', { params }),

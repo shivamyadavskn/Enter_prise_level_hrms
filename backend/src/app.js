@@ -20,6 +20,7 @@ import performanceRoutes from "./modules/performance/performance.routes.js";
 import documentRoutes from "./modules/documents/documents.routes.js";
 import notificationRoutes from "./modules/notifications/notifications.routes.js";
 import reportRoutes from "./modules/reports/reports.routes.js";
+import holidayRoutes from "./modules/holidays/holidays.routes.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -83,6 +84,7 @@ app.use("/api/performance", performanceRoutes);
 app.use("/api/documents", documentRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/reports", reportRoutes);
+app.use("/api/holidays", holidayRoutes);
 
 // ── 404 Handler ───────────────────────────────────────────────────────────────
 app.use((req, res) => {

@@ -6,7 +6,7 @@ import {
   HomeIcon, UsersIcon, BuildingOfficeIcon, CalendarDaysIcon,
   ClockIcon, ComputerDesktopIcon, BanknotesIcon, ChartBarIcon,
   DocumentTextIcon, BellIcon, PresentationChartLineIcon,
-  FolderOpenIcon,
+  FolderOpenIcon, SunIcon, DocumentDuplicateIcon,
 } from '@heroicons/react/24/outline'
 import { useAuth } from '../../contexts/AuthContext.jsx'
 import clsx from 'clsx'
@@ -21,13 +21,19 @@ const navigation = [
   { name: 'Payroll',       href: '/payroll',      icon: BanknotesIcon,               roles: ['SUPER_ADMIN','ADMIN','FINANCE','EMPLOYEE'] },
   { name: 'Performance',   href: '/performance',  icon: ChartBarIcon,                roles: ['ALL'] },
   { name: 'Documents',     href: '/documents',    icon: DocumentTextIcon,            roles: ['ALL'] },
+  { name: 'HR Documents',  href: '/documents/generate', icon: DocumentDuplicateIcon,  roles: ['SUPER_ADMIN','ADMIN','FINANCE'] },
+  { name: 'Holidays',      href: '/holidays',     icon: SunIcon,                     roles: ['ALL'] },
   { name: 'Reports',       href: '/reports',      icon: PresentationChartLineIcon,   roles: ['SUPER_ADMIN','ADMIN','MANAGER','FINANCE'] },
   { name: 'Notifications', href: '/notifications',icon: BellIcon,                   roles: ['ALL'] },
 ]
 
 function NavItem({ item, onClick }) {
   const location = useLocation()
-  const isActive = item.href === '/' ? location.pathname === '/' : location.pathname.startsWith(item.href)
+  const isActive = item.href === '/'
+    ? location.pathname === '/'
+    : item.href === '/documents'
+      ? location.pathname === '/documents'
+      : location.pathname.startsWith(item.href)
 
   return (
     <li>
