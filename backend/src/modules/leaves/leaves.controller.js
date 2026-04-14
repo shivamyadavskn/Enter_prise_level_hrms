@@ -22,7 +22,9 @@ const notifyUser = async (userId, type, title, message) => {
 
 export const getLeaveTypes = async (req, res) => {
   try {
-    const types = await prisma.leaveType.findMany({ where: { isActive: true }, orderBy: { name: "asc" } });
+    const where = { isActive: true };
+    if (req.organisationId) where.organisationId = req.organisationId;
+    const types = await prisma.leaveType.findMany({ where, orderBy: { name: "asc" } });
     return R.success(res, types);
   } catch (err) {
     return R.error(res, err.message);
@@ -31,10 +33,10 @@ export const getLeaveTypes = async (req, res) => {
 
 export const createLeaveType = async (req, res) => {
   try {
-    const existing = await prisma.leaveType.findUnique({ where: { code: req.body.code } });
+    const existing = await prisma.leaveType.findFirst({ where: { code: req.body.code, organisationId: req.organisationId || null } });
     if (existing) return R.badRequest(res, "Leave type code already exists");
 
-    const lt = await prisma.leaveType.create({ data: req.body });
+    const lt = await prisma.leaveType.create({ data: { ...req.body, organisationId: req.organisationId || undefined } });
     return R.created(res, lt);
   } catch (err) {
     return R.error(res, err.message);
@@ -79,14 +81,15 @@ export const bulkAllocateLeaves = async (req, res) => {
     const { year, leaveTypeIds } = req.body;
     const targetYear = year || new Date().getFullYear();
 
+    const orgFilter = req.organisationId ? { organisationId: req.organisationId } : {};
     const [employees, leaveTypes] = await Promise.all([
       prisma.employee.findMany({
-        where: { employmentStatus: { in: ["ACTIVE", "PROBATION"] } },
+        where: { employmentStatus: { in: ["ACTIVE", "PROBATION"] }, ...orgFilter },
         select: { id: true, firstName: true, lastName: true },
       }),
       leaveTypeIds?.length
-        ? prisma.leaveType.findMany({ where: { id: { in: leaveTypeIds }, isActive: true } })
-        : prisma.leaveType.findMany({ where: { isActive: true, annualQuota: { gt: 0 } } }),
+        ? prisma.leaveType.findMany({ where: { id: { in: leaveTypeIds }, isActive: true, ...orgFilter } })
+        : prisma.leaveType.findMany({ where: { isActive: true, annualQuota: { gt: 0 }, ...orgFilter } }),
     ]);
 
     let created = 0, skipped = 0;
@@ -143,6 +146,11 @@ export const getLeaves = async (req, res) => {
   try {
     const { page = 1, limit = 10, status, leaveTypeId, employeeId, startDate, endDate } = req.query;
     const where = {};
+
+    if (req.organisationId) {
+      const orgEmpIds = (await prisma.employee.findMany({ where: { organisationId: req.organisationId }, select: { id: true } })).map(e => e.id);
+      where.employeeId = { in: orgEmpIds };
+    }
 
     if (req.user.role === "EMPLOYEE") {
       const emp = await prisma.employee.findFirst({ where: { userId: req.user.id } });

@@ -22,11 +22,21 @@ import MyProfilePage from './pages/profile/MyProfilePage.jsx'
 import ApprovalsPage from './pages/approvals/ApprovalsPage.jsx'
 import ReimbursementsPage from './pages/reimbursements/ReimbursementsPage.jsx'
 import OnboardingPage from './pages/onboarding/OnboardingPage.jsx'
+import RegisterPage from './pages/auth/RegisterPage.jsx'
+import OrganisationSettingsPage from './pages/organisation/OrganisationSettingsPage.jsx'
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth()
   if (loading) return <div className="flex h-screen items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-4 border-primary-600 border-t-transparent" /></div>
   if (!user) return <Navigate to="/login" replace />
+  return children
+}
+
+function AdminRoute({ children }) {
+  const { user, loading } = useAuth()
+  if (loading) return null
+  if (!user) return <Navigate to="/login" replace />
+  if (!['SUPER_ADMIN', 'ADMIN'].includes(user.role)) return <Navigate to="/" replace />
   return children
 }
 
@@ -41,6 +51,7 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
+      <Route path="/register" element={<PublicRoute><RegisterPage /></PublicRoute>} />
       <Route path="/" element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
         <Route index element={<DashboardPage />} />
         <Route path="employees" element={<EmployeesPage />} />
@@ -62,6 +73,7 @@ function AppRoutes() {
         <Route path="approvals" element={<ApprovalsPage />} />
         <Route path="reimbursements" element={<ReimbursementsPage />} />
         <Route path="onboarding" element={<OnboardingPage />} />
+        <Route path="organisation" element={<AdminRoute><OrganisationSettingsPage /></AdminRoute>} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

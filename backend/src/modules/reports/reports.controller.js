@@ -5,6 +5,16 @@ export const getDashboardStats = async (req, res) => {
   try {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+    const orgId = req.organisationId;
+    const empWhere = orgId ? { organisationId: orgId } : {};
+
+    const orgEmployeeIds = orgId
+      ? (await prisma.employee.findMany({ where: { organisationId: orgId }, select: { id: true } })).map(e => e.id)
+      : undefined;
+    const attWhere = orgEmployeeIds ? { employeeId: { in: orgEmployeeIds } } : {};
+    const leaveWhere = orgEmployeeIds ? { employeeId: { in: orgEmployeeIds } } : {};
+    const wfhWhere = orgEmployeeIds ? { employeeId: { in: orgEmployeeIds } } : {};
+    const regWhere = orgEmployeeIds ? { employeeId: { in: orgEmployeeIds } } : {};
 
     const [
       totalEmployees,
@@ -15,16 +25,16 @@ export const getDashboardStats = async (req, res) => {
       pendingWfh,
       pendingRegularizations,
     ] = await Promise.all([
-      prisma.employee.count(),
-      prisma.employee.count({ where: { employmentStatus: { in: ["ACTIVE", "PROBATION"] } } }),
-      prisma.attendance.count({ where: { date: today, status: "LEAVE" } }),
-      prisma.attendance.count({ where: { date: today, status: "WFH" } }),
-      prisma.leaveApplication.count({ where: { status: "PENDING" } }),
-      prisma.wfhRequest.count({ where: { status: "PENDING" } }),
-      prisma.attendanceRegularization.count({ where: { status: "PENDING" } }),
+      prisma.employee.count({ where: empWhere }),
+      prisma.employee.count({ where: { ...empWhere, employmentStatus: { in: ["ACTIVE", "PROBATION"] } } }),
+      prisma.attendance.count({ where: { ...attWhere, date: today, status: "LEAVE" } }),
+      prisma.attendance.count({ where: { ...attWhere, date: today, status: "WFH" } }),
+      prisma.leaveApplication.count({ where: { ...leaveWhere, status: "PENDING" } }),
+      prisma.wfhRequest.count({ where: { ...wfhWhere, status: "PENDING" } }),
+      prisma.attendanceRegularization.count({ where: { ...regWhere, status: "PENDING" } }),
     ]);
 
-    const presentToday = await prisma.attendance.count({ where: { date: today, status: { in: ["PRESENT", "WFH"] } } });
+    const presentToday = await prisma.attendance.count({ where: { ...attWhere, date: today, status: { in: ["PRESENT", "WFH"] } } });
 
     return R.success(res, {
       totalEmployees,
@@ -41,13 +51,14 @@ export const getDashboardStats = async (req, res) => {
 
 export const getHeadcountReport = async (req, res) => {
   try {
+    const orgId = req.organisationId;
     const byDept = await prisma.employee.groupBy({
       by: ["departmentId", "employmentStatus"],
       _count: { id: true },
-      where: { employmentStatus: { in: ["ACTIVE", "PROBATION"] } },
+      where: { employmentStatus: { in: ["ACTIVE", "PROBATION"] }, ...(orgId ? { organisationId: orgId } : {}) },
     });
 
-    const departments = await prisma.department.findMany({ select: { id: true, name: true } });
+    const departments = await prisma.department.findMany({ where: orgId ? { organisationId: orgId } : {}, select: { id: true, name: true } });
     const deptMap = Object.fromEntries(departments.map((d) => [d.id, d.name]));
 
     const result = byDept.map((r) => ({
@@ -73,6 +84,7 @@ export const getAttendanceReport = async (req, res) => {
     const end = new Date(y, m, 0);
 
     const empWhere = { employmentStatus: { in: ["ACTIVE", "PROBATION"] } };
+    if (req.organisationId) empWhere.organisationId = req.organisationId;
     if (departmentId) empWhere.departmentId = Number(departmentId);
 
     const employees = await prisma.employee.findMany({
@@ -107,6 +119,7 @@ export const getLeaveReport = async (req, res) => {
     const y = Number(year) || new Date().getFullYear();
 
     const empWhere = { employmentStatus: { in: ["ACTIVE", "PROBATION"] } };
+    if (req.organisationId) empWhere.organisationId = req.organisationId;
     if (departmentId) empWhere.departmentId = Number(departmentId);
 
     const employees = await prisma.employee.findMany({
@@ -132,8 +145,9 @@ export const getPayrollReport = async (req, res) => {
     const m = Number(month) || new Date().getMonth() + 1;
     const y = Number(year) || new Date().getFullYear();
 
+    const orgId = req.organisationId;
     const payrolls = await prisma.payroll.findMany({
-      where: { month: m, year: y },
+      where: { month: m, year: y, ...(orgId ? { employee: { organisationId: orgId } } : {}) },
       include: {
         employee: {
           select: {
@@ -163,10 +177,12 @@ export const getAttritionReport = async (req, res) => {
     const { year } = req.query;
     const y = Number(year) || new Date().getFullYear();
 
+    const orgId = req.organisationId;
     const resigned = await prisma.employee.findMany({
       where: {
         employmentStatus: { in: ["RESIGNED", "TERMINATED"] },
         dateOfLeaving: { gte: new Date(y, 0, 1), lte: new Date(y, 11, 31) },
+        ...(orgId ? { organisationId: orgId } : {}),
       },
       include: {
         department: { select: { name: true } },
@@ -174,7 +190,7 @@ export const getAttritionReport = async (req, res) => {
       },
     });
 
-    const total = await prisma.employee.count({ where: { dateOfJoining: { lte: new Date(y, 11, 31) } } });
+    const total = await prisma.employee.count({ where: { dateOfJoining: { lte: new Date(y, 11, 31) }, ...(orgId ? { organisationId: orgId } : {}) } });
     const attritionRate = total > 0 ? ((resigned.length / total) * 100).toFixed(2) : 0;
 
     return R.success(res, { year: y, resigned: resigned.length, totalEmployees: total, attritionRate: `${attritionRate}%`, employees: resigned });
@@ -189,8 +205,9 @@ export const getNewJoinersReport = async (req, res) => {
     const m = Number(month) || new Date().getMonth() + 1;
     const y = Number(year) || new Date().getFullYear();
 
+    const orgId = req.organisationId;
     const joiners = await prisma.employee.findMany({
-      where: { dateOfJoining: { gte: new Date(y, m - 1, 1), lte: new Date(y, m, 0) } },
+      where: { dateOfJoining: { gte: new Date(y, m - 1, 1), lte: new Date(y, m, 0) }, ...(orgId ? { organisationId: orgId } : {}) },
       include: {
         department: { select: { name: true } },
         designation: { select: { name: true } },

@@ -7,7 +7,7 @@ import { sendPayslipReady } from "../../services/email.service.js";
 export const getMissingSalaryStructures = async (req, res) => {
   try {
     const allActive = await prisma.employee.findMany({
-      where: { employmentStatus: { in: ["ACTIVE", "PROBATION"] } },
+      where: { employmentStatus: { in: ["ACTIVE", "PROBATION"] }, ...(req.organisationId ? { organisationId: req.organisationId } : {}) },
       include: { salaryStructures: { where: { isActive: true }, take: 1 }, department: { select: { name: true } }, designation: { select: { name: true } } },
     });
     const missing = allActive.filter((e) => e.salaryStructures.length === 0).map((e) => ({
@@ -88,6 +88,7 @@ export const processPayroll = async (req, res) => {
 
     const whereEmp = {
       employmentStatus: { in: ["ACTIVE", "PROBATION"] },
+      ...(req.organisationId ? { organisationId: req.organisationId } : {}),
     };
     if (employeeIds?.length) whereEmp.id = { in: employeeIds };
 
@@ -166,10 +167,13 @@ export const getPayrolls = async (req, res) => {
     const { page = 1, limit = 10, month, year, employeeId, paymentStatus } = req.query;
     const where = {};
 
+    if (req.organisationId) where.employee = { organisationId: req.organisationId };
+
     if (req.user.role === "EMPLOYEE") {
       const emp = await prisma.employee.findFirst({ where: { userId: req.user.id } });
       if (!emp) return R.notFound(res, "Employee not found");
       where.employeeId = emp.id;
+      delete where.employee;
     } else if (req.user.role === "FINANCE" || ["ADMIN", "SUPER_ADMIN"].includes(req.user.role)) {
       if (employeeId) where.employeeId = Number(employeeId);
     } else {

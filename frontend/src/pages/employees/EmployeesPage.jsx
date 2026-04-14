@@ -6,8 +6,9 @@ import Badge from '../../components/common/Badge.jsx'
 import Pagination from '../../components/common/Pagination.jsx'
 import { PageLoader } from '../../components/common/LoadingSpinner.jsx'
 import EmptyState from '../../components/common/EmptyState.jsx'
-import { MagnifyingGlassIcon, PlusIcon, FunnelIcon } from '@heroicons/react/24/outline'
+import { MagnifyingGlassIcon, PlusIcon, ArrowUpTrayIcon } from '@heroicons/react/24/outline'
 import { useAuth } from '../../contexts/AuthContext.jsx'
+import EmployeeImportModal from '../../components/common/EmployeeImportModal.jsx'
 
 export default function EmployeesPage() {
   const { isAdmin } = useAuth()
@@ -16,6 +17,7 @@ export default function EmployeesPage() {
   const [search, setSearch] = useState('')
   const [deptFilter, setDeptFilter] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
+  const [importModal, setImportModal] = useState(false)
 
   const { data, isLoading } = useQuery({
     queryKey: ['employees', page, search, deptFilter, statusFilter],
@@ -41,9 +43,14 @@ export default function EmployeesPage() {
           <p className="text-sm text-gray-500">Manage your workforce</p>
         </div>
         {isAdmin() && (
-          <Link to="/employees/new" className="inline-flex items-center gap-x-2 rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500">
-            <PlusIcon className="h-4 w-4" /> Add Employee
-          </Link>
+          <div className="flex gap-2">
+            <button onClick={() => setImportModal(true)} className="inline-flex items-center gap-x-2 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">
+              <ArrowUpTrayIcon className="h-4 w-4" /> Import Excel
+            </button>
+            <Link to="/employees/new" className="inline-flex items-center gap-x-2 rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500">
+              <PlusIcon className="h-4 w-4" /> Add Employee
+            </Link>
+          </div>
         )}
       </div>
 
@@ -119,6 +126,12 @@ export default function EmployeesPage() {
           </>
         )}
       </div>
+
+      <EmployeeImportModal
+        open={importModal}
+        onClose={() => setImportModal(false)}
+        onSuccess={() => { qc.invalidateQueries(['employees']); setImportModal(false) }}
+      />
     </div>
   )
 }

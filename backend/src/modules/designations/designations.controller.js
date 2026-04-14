@@ -5,6 +5,7 @@ export const getDesignations = async (req, res) => {
   try {
     const { page = 1, limit = 50, isActive, search } = req.query;
     const where = {};
+    if (req.organisationId) where.organisationId = req.organisationId;
     if (isActive !== undefined) where.isActive = isActive;
     if (search) where.name = { contains: search, mode: "insensitive" };
 
@@ -40,7 +41,7 @@ export const getDesignationById = async (req, res) => {
 
 export const createDesignation = async (req, res) => {
   try {
-    const desig = await prisma.designation.create({ data: req.body });
+    const desig = await prisma.designation.create({ data: { ...req.body, organisationId: req.organisationId || undefined } });
     return R.created(res, desig, "Designation created successfully");
   } catch (err) {
     return R.error(res, err.message);

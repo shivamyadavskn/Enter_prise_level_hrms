@@ -5,6 +5,7 @@ export const getHolidays = async (req, res) => {
   try {
     const { year, type } = req.query;
     const where = { isActive: true };
+    if (req.organisationId) where.organisationId = req.organisationId;
     if (type) where.type = type;
     if (year) {
       const start = new Date(Number(year), 0, 1);
@@ -25,7 +26,7 @@ export const createHoliday = async (req, res) => {
   try {
     const { name, date, type } = req.body;
     const holiday = await prisma.holiday.create({
-      data: { name, date: new Date(date), type },
+      data: { name, date: new Date(date), type, organisationId: req.organisationId || undefined },
     });
     return R.created(res, holiday, "Holiday created");
   } catch (err) {

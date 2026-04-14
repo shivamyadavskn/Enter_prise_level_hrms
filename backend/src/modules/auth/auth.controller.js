@@ -10,7 +10,10 @@ export const login = async (req, res) => {
 
     const user = await prisma.user.findUnique({
       where: { email },
-      include: { employee: { select: { id: true, firstName: true, lastName: true, employeeCode: true } } },
+      include: {
+        employee: { select: { id: true, firstName: true, lastName: true, employeeCode: true } },
+        organisation: { select: { id: true, name: true, slug: true, logoUrl: true } },
+      },
     });
 
     if (!user || !user.isActive) return R.unauthorized(res, "Invalid credentials");
@@ -39,7 +42,9 @@ export const login = async (req, res) => {
         id: user.id,
         email: user.email,
         role: user.role,
+        organisationId: user.organisationId,
         employee: user.employee,
+        organisation: user.organisation,
       },
     }, "Login successful");
   } catch (err) {
@@ -111,6 +116,7 @@ export const me = async (req, res) => {
         isActive: true,
         lastLogin: true,
         createdAt: true,
+        organisation: { select: { id: true, name: true, slug: true, logoUrl: true, pfEnabled: true, esicEnabled: true } },
         employee: {
           include: {
             department: { select: { id: true, name: true } },

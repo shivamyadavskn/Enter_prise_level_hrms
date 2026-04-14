@@ -8,7 +8,7 @@ import {
   DocumentTextIcon, BellIcon, PresentationChartLineIcon,
   FolderOpenIcon, SunIcon, DocumentDuplicateIcon,
   BriefcaseIcon, CheckCircleIcon, CurrencyDollarIcon, UserCircleIcon,
-  ClipboardDocumentListIcon,
+  ClipboardDocumentListIcon, Cog8ToothIcon,
 } from '@heroicons/react/24/outline'
 import { useAuth } from '../../contexts/AuthContext.jsx'
 import clsx from 'clsx'
@@ -32,6 +32,7 @@ const navigation = [
   { name: 'Onboarding',    href: '/onboarding',   icon: ClipboardDocumentListIcon,   roles: ['ALL'] },
   { name: 'Notifications', href: '/notifications',icon: BellIcon,                   roles: ['ALL'] },
   { name: 'My Profile',    href: '/profile',      icon: UserCircleIcon,              roles: ['ALL'] },
+  { name: 'Organisation',  href: '/organisation', icon: Cog8ToothIcon,               roles: ['SUPER_ADMIN', 'ADMIN'] },
 ]
 
 function NavItem({ item, onClick }) {

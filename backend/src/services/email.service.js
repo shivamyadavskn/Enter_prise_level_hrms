@@ -158,7 +158,7 @@ export async function sendLeaveApproved({ email, firstName, leaveType, startDate
     ${para(`Hi ${firstName}, your leave request has been approved.`)}
     ${infoTable([
     ["Leave Type", leaveType],
-    ["From", fmt(startDate)],
+    ["From", fmt(startDate)] ,
     ["To", fmt(endDate)],
     ["Total Days", `${totalDays} day(s)`],
     ["Approved By", approverName || "Management"],

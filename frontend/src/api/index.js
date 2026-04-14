@@ -9,6 +9,13 @@ export const authApi = {
   changePassword: (data) => api.put('/auth/change-password', data),
 }
 
+// ── Organisation ──────────────────────────────────────────────────────────────
+export const organisationApi = {
+  register: (data) => api.post('/organisation/register', data),
+  get: () => api.get('/organisation'),
+  update: (data) => api.put('/organisation', data),
+}
+
 // ── Users ─────────────────────────────────────────────────────────────────────
 export const usersApi = {
   getAll: (params) => api.get('/users', { params }),
@@ -36,6 +43,8 @@ export const employeesApi = {
   addEducation: (id, data) => api.post(`/employees/${id}/education`, data),
   updateEducation: (id, eduId, data) => api.put(`/employees/${id}/education/${eduId}`, data),
   deleteEducation: (id, eduId) => api.delete(`/employees/${id}/education/${eduId}`),
+  importPreview: (file) => { const fd = new FormData(); fd.append('file', file); return api.post('/employees/import/preview', fd) },
+  importExecute: (file, columnMapping) => { const fd = new FormData(); fd.append('file', file); fd.append('columnMapping', JSON.stringify(columnMapping)); return api.post('/employees/import/execute', fd) },
 }
 
 // ── Departments ───────────────────────────────────────────────────────────────

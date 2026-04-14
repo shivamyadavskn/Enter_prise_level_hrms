@@ -19,12 +19,13 @@ export const authenticate = async (req, res, next) => {
 
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
-      select: { id: true, email: true, role: true, isActive: true },
+      select: { id: true, email: true, role: true, isActive: true, organisationId: true },
     });
 
     if (!user || !user.isActive) return unauthorized(res, "User not found or inactive");
 
     req.user = user;
+    req.organisationId = user.organisationId;
     next();
   } catch (err) {
     if (err.name === "TokenExpiredError") return unauthorized(res, "Token expired");

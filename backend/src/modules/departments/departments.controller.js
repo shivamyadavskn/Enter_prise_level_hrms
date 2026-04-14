@@ -10,6 +10,7 @@ export const getDepartments = async (req, res) => {
   try {
     const { page = 1, limit = 50, isActive, search } = req.query;
     const where = {};
+    if (req.organisationId) where.organisationId = req.organisationId;
     if (isActive !== undefined) where.isActive = isActive;
     if (search) where.OR = [
       { name: { contains: search, mode: "insensitive" } },
@@ -48,10 +49,10 @@ export const getDepartmentById = async (req, res) => {
 
 export const createDepartment = async (req, res) => {
   try {
-    const existing = await prisma.department.findUnique({ where: { code: req.body.code } });
+    const existing = await prisma.department.findFirst({ where: { code: req.body.code, organisationId: req.organisationId || null } });
     if (existing) return R.badRequest(res, "Department code already exists");
 
-    const dept = await prisma.department.create({ data: req.body, include: deptInclude });
+    const dept = await prisma.department.create({ data: { ...req.body, organisationId: req.organisationId || undefined }, include: deptInclude });
     return R.created(res, dept, "Department created successfully");
   } catch (err) {
     return R.error(res, err.message);

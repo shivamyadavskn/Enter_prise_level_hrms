@@ -15,6 +15,7 @@ export const getEmployees = async (req, res) => {
     const skip = (Number(page) - 1) * Number(limit);
 
     const where = {};
+    if (req.organisationId) where.organisationId = req.organisationId;
 
     if (req.user.role === "MANAGER") {
       const emp = await prisma.employee.findFirst({ where: { userId: req.user.id } });
@@ -86,6 +87,7 @@ export const createEmployee = async (req, res) => {
     const employee = await prisma.employee.create({
       data: {
         ...data,
+        organisationId: req.organisationId || undefined,
         dateOfBirth: data.dateOfBirth ? new Date(data.dateOfBirth) : undefined,
         dateOfJoining: data.dateOfJoining ? new Date(data.dateOfJoining) : undefined,
       },
