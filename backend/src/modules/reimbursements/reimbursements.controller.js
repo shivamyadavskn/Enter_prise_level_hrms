@@ -1,5 +1,6 @@
 import prisma from "../../config/prisma.js";
 import * as R from "../../utils/response.js";
+import { sendReimbursementApproved, sendReimbursementRejected } from "../../services/email.service.js";
 
 const empInclude = { select: { id: true, firstName: true, lastName: true, employeeCode: true, designation: { select: { name: true } }, department: { select: { name: true } } } };
 
@@ -63,6 +64,17 @@ export const approveClaim = async (req, res) => {
       include: { employee: { include: { user: true } } },
     });
     await prisma.notification.create({ data: { userId: claim.employee.userId, notificationType: "REIMBURSEMENT_APPROVED", title: "Reimbursement Approved", message: `Your claim "${claim.title}" has been approved.` } });
+
+    if (claim.employee.user?.email) {
+      sendReimbursementApproved({
+        email: claim.employee.user.email,
+        firstName: claim.employee.firstName,
+        title: claim.title,
+        totalAmount: claim.totalAmount,
+        approverName: approver ? `${approver.firstName} ${approver.lastName}` : "Management",
+      }).catch(() => {});
+    }
+
     return R.success(res, claim, "Claim approved");
   } catch (err) {
     return R.error(res, err.message);
@@ -81,6 +93,18 @@ export const rejectClaim = async (req, res) => {
       include: { employee: { include: { user: true } } },
     });
     await prisma.notification.create({ data: { userId: claim.employee.userId, notificationType: "REIMBURSEMENT_REJECTED", title: "Reimbursement Rejected", message: `Your claim "${claim.title}" was rejected: ${rejectionReason}` } });
+
+    if (claim.employee.user?.email) {
+      sendReimbursementRejected({
+        email: claim.employee.user.email,
+        firstName: claim.employee.firstName,
+        title: claim.title,
+        totalAmount: claim.totalAmount,
+        reason: rejectionReason,
+        approverName: approver ? `${approver.firstName} ${approver.lastName}` : "Management",
+      }).catch(() => {});
+    }
+
     return R.success(res, claim, "Claim rejected");
   } catch (err) {
     return R.error(res, err.message);

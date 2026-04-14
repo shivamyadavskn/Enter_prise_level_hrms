@@ -1,5 +1,6 @@
 import prisma from "../../config/prisma.js";
 import * as R from "../../utils/response.js";
+import { sendRegularizationApproved, sendRegularizationRejected } from "../../services/email.service.js";
 
 const calcHours = (clockIn, clockOut) => {
   if (!clockIn || !clockOut) return null;
@@ -275,6 +276,17 @@ export const approveRegularization = async (req, res) => {
       data: { userId: reg.employee.userId, notificationType: "REGULARIZATION_APPROVED", title: "Attendance Regularized", message: "Your attendance regularization has been approved" },
     });
 
+    if (reg.employee.user?.email) {
+      const att = await prisma.attendance.findUnique({ where: { id: reg.attendanceId } });
+      const approverEmp = approver ? await prisma.employee.findUnique({ where: { id: approver.id } }) : null;
+      sendRegularizationApproved({
+        email: reg.employee.user.email,
+        firstName: reg.employee.firstName,
+        date: att?.date || new Date(),
+        approverName: approverEmp ? `${approverEmp.firstName} ${approverEmp.lastName}` : "Management",
+      }).catch(() => {});
+    }
+
     return R.success(res, null, "Regularization approved");
   } catch (err) {
     return R.error(res, err.message);
@@ -300,6 +312,17 @@ export const rejectRegularization = async (req, res) => {
     await prisma.notification.create({
       data: { userId: reg.employee.userId, notificationType: "REGULARIZATION_REJECTED", title: "Attendance Regularization Rejected", message: `Rejection reason: ${rejectionReason}` },
     });
+
+    if (reg.employee.user?.email) {
+      const att = await prisma.attendance.findUnique({ where: { id: reg.attendanceId } });
+      sendRegularizationRejected({
+        email: reg.employee.user.email,
+        firstName: reg.employee.firstName,
+        date: att?.date || new Date(),
+        reason: rejectionReason,
+        approverName: approver ? `${approver.firstName} ${approver.lastName}` : "Management",
+      }).catch(() => {});
+    }
 
     return R.success(res, null, "Regularization rejected");
   } catch (err) {

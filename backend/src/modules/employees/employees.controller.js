@@ -1,5 +1,6 @@
 import prisma from "../../config/prisma.js";
 import * as R from "../../utils/response.js";
+import { sendEmployeeWelcome } from "../../services/email.service.js";
 
 const employeeInclude = {
   user: { select: { id: true, email: true, role: true, isActive: true } },
@@ -88,6 +89,18 @@ export const createEmployee = async (req, res) => {
       include: employeeInclude,
     });
 
+    if (employee.user?.email) {
+      sendEmployeeWelcome({
+        email: employee.user.email,
+        firstName: employee.firstName,
+        lastName: employee.lastName,
+        employeeCode: employee.employeeCode,
+        designation: employee.designation?.name,
+        department: employee.department?.name,
+        dateOfJoining: employee.dateOfJoining,
+      }).catch(() => {});
+    }
+
     return R.created(res, employee, "Employee created successfully");
   } catch (err) {
     return R.error(res, err.message);
@@ -144,10 +157,147 @@ export const getMyProfile = async (req, res) => {
         ...employeeInclude,
         leaveBalances: { include: { leaveType: true } },
         salaryStructures: { where: { isActive: true }, take: 1 },
+        experiences: { orderBy: { startDate: "desc" } },
+        educations: { orderBy: { endYear: "desc" } },
+        documents: { orderBy: { uploadedOn: "desc" } },
       },
     });
     if (!employee) return R.notFound(res, "Employee profile not found");
     return R.success(res, employee);
+  } catch (err) {
+    return R.error(res, err.message);
+  }
+};
+
+// ── Experience ─────────────────────────────────────────────────────────────────
+
+export const getExperiences = async (req, res) => {
+  try {
+    const empId = Number(req.params.id);
+    if (req.user.role === "EMPLOYEE") {
+      const self = await prisma.employee.findFirst({ where: { userId: req.user.id } });
+      if (!self || self.id !== empId) return R.forbidden(res, "Access denied");
+    }
+    const experiences = await prisma.employeeExperience.findMany({
+      where: { employeeId: empId },
+      orderBy: { startDate: "desc" },
+    });
+    return R.success(res, experiences);
+  } catch (err) {
+    return R.error(res, err.message);
+  }
+};
+
+export const addExperience = async (req, res) => {
+  try {
+    const empId = Number(req.params.id);
+    if (req.user.role === "EMPLOYEE") {
+      const self = await prisma.employee.findFirst({ where: { userId: req.user.id } });
+      if (!self || self.id !== empId) return R.forbidden(res, "Access denied");
+    }
+    const data = { ...req.body, employeeId: empId };
+    if (data.startDate) data.startDate = new Date(data.startDate);
+    if (data.endDate) data.endDate = new Date(data.endDate);
+    if (data.isCurrent) data.endDate = null;
+    const exp = await prisma.employeeExperience.create({ data });
+    return R.created(res, exp, "Experience added successfully");
+  } catch (err) {
+    return R.error(res, err.message);
+  }
+};
+
+export const updateExperience = async (req, res) => {
+  try {
+    const id = Number(req.params.expId);
+    if (req.user.role === "EMPLOYEE") {
+      const self = await prisma.employee.findFirst({ where: { userId: req.user.id } });
+      const exp = await prisma.employeeExperience.findUnique({ where: { id } });
+      if (!self || !exp || exp.employeeId !== self.id) return R.forbidden(res, "Access denied");
+    }
+    const data = { ...req.body };
+    if (data.startDate) data.startDate = new Date(data.startDate);
+    if (data.endDate) data.endDate = new Date(data.endDate);
+    if (data.isCurrent) data.endDate = null;
+    const exp = await prisma.employeeExperience.update({ where: { id }, data });
+    return R.success(res, exp, "Experience updated");
+  } catch (err) {
+    return R.error(res, err.message);
+  }
+};
+
+export const deleteExperience = async (req, res) => {
+  try {
+    const id = Number(req.params.expId);
+    if (req.user.role === "EMPLOYEE") {
+      const self = await prisma.employee.findFirst({ where: { userId: req.user.id } });
+      const exp = await prisma.employeeExperience.findUnique({ where: { id } });
+      if (!self || !exp || exp.employeeId !== self.id) return R.forbidden(res, "Access denied");
+    }
+    await prisma.employeeExperience.delete({ where: { id } });
+    return R.success(res, null, "Experience deleted");
+  } catch (err) {
+    return R.error(res, err.message);
+  }
+};
+
+// ── Education ──────────────────────────────────────────────────────────────────
+
+export const getEducations = async (req, res) => {
+  try {
+    const empId = Number(req.params.id);
+    if (req.user.role === "EMPLOYEE") {
+      const self = await prisma.employee.findFirst({ where: { userId: req.user.id } });
+      if (!self || self.id !== empId) return R.forbidden(res, "Access denied");
+    }
+    const educations = await prisma.employeeEducation.findMany({
+      where: { employeeId: empId },
+      orderBy: { endYear: "desc" },
+    });
+    return R.success(res, educations);
+  } catch (err) {
+    return R.error(res, err.message);
+  }
+};
+
+export const addEducation = async (req, res) => {
+  try {
+    const empId = Number(req.params.id);
+    if (req.user.role === "EMPLOYEE") {
+      const self = await prisma.employee.findFirst({ where: { userId: req.user.id } });
+      if (!self || self.id !== empId) return R.forbidden(res, "Access denied");
+    }
+    const edu = await prisma.employeeEducation.create({ data: { ...req.body, employeeId: empId } });
+    return R.created(res, edu, "Education added successfully");
+  } catch (err) {
+    return R.error(res, err.message);
+  }
+};
+
+export const updateEducation = async (req, res) => {
+  try {
+    const id = Number(req.params.eduId);
+    if (req.user.role === "EMPLOYEE") {
+      const self = await prisma.employee.findFirst({ where: { userId: req.user.id } });
+      const edu = await prisma.employeeEducation.findUnique({ where: { id } });
+      if (!self || !edu || edu.employeeId !== self.id) return R.forbidden(res, "Access denied");
+    }
+    const edu = await prisma.employeeEducation.update({ where: { id }, data: req.body });
+    return R.success(res, edu, "Education updated");
+  } catch (err) {
+    return R.error(res, err.message);
+  }
+};
+
+export const deleteEducation = async (req, res) => {
+  try {
+    const id = Number(req.params.eduId);
+    if (req.user.role === "EMPLOYEE") {
+      const self = await prisma.employee.findFirst({ where: { userId: req.user.id } });
+      const edu = await prisma.employeeEducation.findUnique({ where: { id } });
+      if (!self || !edu || edu.employeeId !== self.id) return R.forbidden(res, "Access denied");
+    }
+    await prisma.employeeEducation.delete({ where: { id } });
+    return R.success(res, null, "Education deleted");
   } catch (err) {
     return R.error(res, err.message);
   }

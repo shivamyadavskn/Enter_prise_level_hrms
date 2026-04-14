@@ -1,5 +1,6 @@
 import prisma from "../../config/prisma.js";
 import * as R from "../../utils/response.js";
+import { sendPayslipReady } from "../../services/email.service.js";
 
 // ── Salary Structures ─────────────────────────────────────────────────────────
 
@@ -92,7 +93,7 @@ export const processPayroll = async (req, res) => {
 
     const employees = await prisma.employee.findMany({
       where: whereEmp,
-      include: { salaryStructures: { where: { isActive: true }, take: 1 } },
+      include: { salaryStructures: { where: { isActive: true }, take: 1 }, user: { select: { email: true } } },
     });
 
     const results = [];
@@ -138,6 +139,17 @@ export const processPayroll = async (req, res) => {
       });
 
       results.push(payroll);
+
+      if (emp.user?.email) {
+        sendPayslipReady({
+          email: emp.user.email,
+          firstName: emp.firstName,
+          month,
+          year,
+          grossSalary,
+          netSalary,
+        }).catch(() => {});
+      }
     }
 
     const msg = skipped.length

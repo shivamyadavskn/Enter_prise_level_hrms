@@ -77,6 +77,10 @@ enum DocumentType {
   EDUCATION
   EXPERIENCE
   OFFER_LETTER
+  APPOINTMENT_LETTER
+  CONFIRMATION_LETTER
+  RELIEVING_LETTER
+  RESIGNATION_LETTER
   CONTRACT
   PAYSLIP
   OTHER
@@ -177,8 +181,48 @@ model Employee {
   documents               Document[]
   reimbursementClaims     ReimbursementClaim[]
   reimbursementApprovals  ReimbursementClaim[] @relation("ReimbursementApprover")
+  experiences             EmployeeExperience[]
+  educations              EmployeeEducation[]
 
   @@map("employees")
+}
+
+model EmployeeExperience {
+  id              Int       @id @default(autoincrement())
+  employeeId      Int
+  companyName     String
+  jobTitle        String
+  department      String?
+  location        String?
+  employmentType  String?   // Full-time, Part-time, Contract
+  startDate       DateTime
+  endDate         DateTime?
+  isCurrent       Boolean   @default(false)
+  ctc             Float?
+  responsibilities String?
+  reasonForLeaving String?
+  createdAt       DateTime  @default(now())
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@map("employee_experiences")
+}
+
+model EmployeeEducation {
+  id           Int       @id @default(autoincrement())
+  employeeId   Int
+  degree       String    // B.Tech, MBA, 12th, etc.
+  fieldOfStudy String?
+  institution  String
+  board        String?   // University / Board name
+  startYear    Int?
+  endYear      Int?
+  grade        String?   // Percentage / CGPA
+  createdAt    DateTime  @default(now())
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@map("employee_educations")
 }
 
 model Department {

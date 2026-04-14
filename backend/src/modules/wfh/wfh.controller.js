@@ -1,5 +1,6 @@
 import prisma from "../../config/prisma.js";
 import * as R from "../../utils/response.js";
+import { sendWfhApproved, sendWfhRejected } from "../../services/email.service.js";
 
 export const getWfhRequests = async (req, res) => {
   try {
@@ -127,6 +128,17 @@ export const approveWfh = async (req, res) => {
       data: { userId: wfh.employee.userId, notificationType: "WFH_APPROVED", title: "WFH Approved", message: "Your WFH request has been approved" },
     });
 
+    if (wfh.employee.user?.email) {
+      const approverEmp = approver ? await prisma.employee.findUnique({ where: { id: approver.id } }) : null;
+      sendWfhApproved({
+        email: wfh.employee.user.email,
+        firstName: wfh.employee.firstName,
+        startDate: wfh.startDate,
+        endDate: wfh.endDate,
+        approverName: approverEmp ? `${approverEmp.firstName} ${approverEmp.lastName}` : "Management",
+      }).catch(() => {});
+    }
+
     return R.success(res, updated, "WFH request approved");
   } catch (err) {
     return R.error(res, err.message);
@@ -152,6 +164,17 @@ export const rejectWfh = async (req, res) => {
     await prisma.notification.create({
       data: { userId: wfh.employee.userId, notificationType: "WFH_REJECTED", title: "WFH Rejected", message: `Your WFH request was rejected: ${rejectionReason}` },
     });
+
+    if (wfh.employee.user?.email) {
+      sendWfhRejected({
+        email: wfh.employee.user.email,
+        firstName: wfh.employee.firstName,
+        startDate: wfh.startDate,
+        endDate: wfh.endDate,
+        reason: rejectionReason,
+        approverName: approver ? `${approver.firstName} ${approver.lastName}` : "Management",
+      }).catch(() => {});
+    }
 
     return R.success(res, updated, "WFH request rejected");
   } catch (err) {

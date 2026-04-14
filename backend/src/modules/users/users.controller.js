@@ -1,6 +1,7 @@
 import bcrypt from "bcryptjs";
 import prisma from "../../config/prisma.js";
 import * as R from "../../utils/response.js";
+import { sendUserInvite } from "../../services/email.service.js";
 
 const userSelect = {
   id: true,
@@ -72,6 +73,8 @@ export const createUser = async (req, res) => {
       data: { username, email, passwordHash, role },
       select: userSelect,
     });
+
+    sendUserInvite({ email, username, password, role }).catch(() => {});
 
     return R.created(res, user, "User created successfully");
   } catch (err) {
