@@ -3,7 +3,8 @@ import { useQuery } from '@tanstack/react-query'
 import { employeesApi } from '../../api/index.js'
 import Badge from '../../components/common/Badge.jsx'
 import { PageLoader } from '../../components/common/LoadingSpinner.jsx'
-import { ArrowLeftIcon, EnvelopeIcon, PhoneIcon, MapPinIcon, BanknotesIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline'
+import { ArrowLeftIcon, EnvelopeIcon, PhoneIcon, MapPinIcon, BanknotesIcon, ExclamationTriangleIcon, BriefcaseIcon, AcademicCapIcon, DocumentTextIcon } from '@heroicons/react/24/outline'
+import { format } from 'date-fns'
 import { useAuth } from '../../contexts/AuthContext.jsx'
 
 function InfoRow({ label, value }) {
@@ -151,6 +152,75 @@ export default function EmployeeDetailPage() {
                 <Link to="/payroll" className="underline ml-1">Set up →</Link>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Work Experience */}
+      {emp.experiences?.length > 0 && (
+        <div className="rounded-lg bg-white shadow p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <BriefcaseIcon className="h-5 w-5 text-primary-600" />
+            <h2 className="text-base font-semibold text-gray-900">Work Experience</h2>
+          </div>
+          <div className="space-y-4">
+            {emp.experiences.map(ex => (
+              <div key={ex.id} className="rounded-lg border border-gray-100 p-4">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="font-semibold text-gray-900 text-sm">{ex.jobTitle}</p>
+                    <p className="text-sm text-gray-600">{ex.companyName}{ex.location ? ` · ${ex.location}` : ''}</p>
+                    <p className="text-xs text-gray-400 mt-1">
+                      {ex.startDate ? format(new Date(ex.startDate), 'MMM yyyy') : '—'} — {ex.isCurrent ? 'Present' : (ex.endDate ? format(new Date(ex.endDate), 'MMM yyyy') : '—')}
+                      {ex.employmentType ? ` · ${ex.employmentType}` : ''}
+                    </p>
+                    {ex.responsibilities && <p className="text-xs text-gray-500 mt-1">{ex.responsibilities}</p>}
+                  </div>
+                  {ex.ctc && <span className="text-xs bg-green-50 text-green-700 border border-green-200 rounded px-2 py-0.5">₹{Number(ex.ctc).toLocaleString('en-IN')}/yr</span>}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Education */}
+      {emp.educations?.length > 0 && (
+        <div className="rounded-lg bg-white shadow p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <AcademicCapIcon className="h-5 w-5 text-primary-600" />
+            <h2 className="text-base font-semibold text-gray-900">Education</h2>
+          </div>
+          <div className="space-y-3">
+            {emp.educations.map(ed => (
+              <div key={ed.id} className="rounded-lg border border-gray-100 p-4">
+                <p className="font-semibold text-gray-900 text-sm">{ed.degree}{ed.fieldOfStudy ? ` in ${ed.fieldOfStudy}` : ''}</p>
+                <p className="text-sm text-gray-600">{ed.institution}{ed.board ? ` · ${ed.board}` : ''}</p>
+                <p className="text-xs text-gray-400 mt-1">{ed.startYear || '—'} — {ed.endYear || 'Present'}{ed.grade ? ` · ${ed.grade}` : ''}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Documents — Admin/Finance only */}
+      {canViewBankSalary && emp.documents?.length > 0 && (
+        <div className="rounded-lg bg-white shadow p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <DocumentTextIcon className="h-5 w-5 text-primary-600" />
+            <h2 className="text-base font-semibold text-gray-900">Documents</h2>
+          </div>
+          <div className="divide-y divide-gray-100">
+            {emp.documents.map(doc => (
+              <div key={doc.id} className="flex items-center justify-between py-3">
+                <div>
+                  <p className="text-sm font-medium text-gray-900">{doc.documentName}</p>
+                  <p className="text-xs text-gray-400">{doc.documentType?.replace(/_/g, ' ')}{doc.uploadedOn ? ` · ${format(new Date(doc.uploadedOn), 'dd MMM yyyy')}` : ''}</p>
+                </div>
+                <a href={`/api/documents/${doc.id}/download`} target="_blank" rel="noopener noreferrer"
+                  className="text-sm text-primary-600 hover:underline">Download</a>
+              </div>
+            ))}
           </div>
         </div>
       )}

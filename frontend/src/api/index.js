@@ -28,6 +28,14 @@ export const employeesApi = {
   create: (data) => api.post('/employees', data),
   update: (id, data) => api.put(`/employees/${id}`, data),
   delete: (id) => api.delete(`/employees/${id}`),
+  getExperiences: (id) => api.get(`/employees/${id}/experience`),
+  addExperience: (id, data) => api.post(`/employees/${id}/experience`, data),
+  updateExperience: (id, expId, data) => api.put(`/employees/${id}/experience/${expId}`, data),
+  deleteExperience: (id, expId) => api.delete(`/employees/${id}/experience/${expId}`),
+  getEducations: (id) => api.get(`/employees/${id}/education`),
+  addEducation: (id, data) => api.post(`/employees/${id}/education`, data),
+  updateEducation: (id, eduId, data) => api.put(`/employees/${id}/education/${eduId}`, data),
+  deleteEducation: (id, eduId) => api.delete(`/employees/${id}/education/${eduId}`),
 }
 
 // ── Departments ───────────────────────────────────────────────────────────────

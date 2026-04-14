@@ -61,6 +61,9 @@ export const getEmployeeById = async (req, res) => {
         ...employeeInclude,
         subordinates: { select: { id: true, firstName: true, lastName: true, employeeCode: true } },
         salaryStructures: { where: { isActive: true }, take: 1 },
+        experiences: { orderBy: { startDate: "desc" } },
+        educations: { orderBy: { endYear: "desc" } },
+        documents: { orderBy: { uploadedOn: "desc" } },
       },
     });
 
