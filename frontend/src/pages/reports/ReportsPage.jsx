@@ -10,6 +10,15 @@ import {
   BanknotesIcon, ArrowTrendingDownIcon, UserPlusIcon,
 } from '@heroicons/react/24/outline'
 import { format } from 'date-fns'
+import { ArrowDownTrayIcon } from '@heroicons/react/24/outline'
+
+function exportCSV(filename, headers, rows) {
+  const csv = [headers.join(','), ...rows.map(r => r.map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(','))].join('\n')
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a'); a.href = url; a.download = filename; a.click()
+  URL.revokeObjectURL(url)
+}
 
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
 const TABS = [
@@ -63,6 +72,9 @@ function AttendanceReport() {
         <select value={year} onChange={(e) => setYear(Number(e.target.value))} className="rounded-md border-0 py-1.5 pl-3 pr-8 ring-1 ring-inset ring-gray-300 sm:text-sm">
           {[2024, 2025, 2026].map((y) => <option key={y} value={y}>{y}</option>)}
         </select>
+        <button onClick={() => exportCSV(`attendance_${MONTHS[month-1]}_${year}.csv`, ['Employee','Employee Code','Department','Present','Absent','Half Day','Leave','WFH','Total Hours'], rows.map(r => [`${r.employee?.firstName} ${r.employee?.lastName}`, r.employee?.employeeCode, r.employee?.department?.name, r.present, r.absent, r.halfDay, r.leave, r.wfh, r.totalHours]))} className="flex items-center gap-1.5 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50">
+          <ArrowDownTrayIcon className="h-4 w-4" /> Export CSV
+        </button>
       </div>
       <div className="overflow-hidden rounded-lg bg-white shadow">
         <table className="min-w-full divide-y divide-gray-200">
@@ -110,6 +122,9 @@ function PayrollReport() {
         <select value={year} onChange={(e) => setYear(Number(e.target.value))} className="rounded-md border-0 py-1.5 pl-3 pr-8 ring-1 ring-inset ring-gray-300 sm:text-sm">
           {[2024, 2025, 2026].map((y) => <option key={y} value={y}>{y}</option>)}
         </select>
+        <button onClick={() => exportCSV(`payroll_${MONTHS[month-1]}_${year}.csv`, ['Employee','Employee Code','Department','Designation','Gross Salary','Total Deductions','Net Salary','Status'], payrolls.map(p => [`${p.employee?.firstName} ${p.employee?.lastName}`, p.employee?.employeeCode, p.employee?.department?.name, p.employee?.designation?.name, p.grossSalary?.toFixed(2), p.totalDeductions?.toFixed(2), p.netSalary?.toFixed(2), p.paymentStatus]))} className="flex items-center gap-1.5 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50">
+          <ArrowDownTrayIcon className="h-4 w-4" /> Export CSV
+        </button>
       </div>
       {report?.totals && (
         <div className="grid grid-cols-3 gap-4">

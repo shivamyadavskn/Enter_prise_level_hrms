@@ -17,6 +17,10 @@ import DepartmentsPage from './pages/departments/DepartmentsPage.jsx'
 import ReportsPage from './pages/reports/ReportsPage.jsx'
 import HolidaysPage from './pages/holidays/HolidaysPage.jsx'
 import DocumentGeneratorPage from './pages/documents/DocumentGeneratorPage.jsx'
+import DesignationsPage from './pages/designations/DesignationsPage.jsx'
+import MyProfilePage from './pages/profile/MyProfilePage.jsx'
+import ApprovalsPage from './pages/approvals/ApprovalsPage.jsx'
+import ReimbursementsPage from './pages/reimbursements/ReimbursementsPage.jsx'
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth()
@@ -52,6 +56,10 @@ function AppRoutes() {
         <Route path="reports" element={<ReportsPage />} />
         <Route path="holidays" element={<HolidaysPage />} />
         <Route path="documents/generate" element={<DocumentGeneratorPage />} />
+        <Route path="designations" element={<DesignationsPage />} />
+        <Route path="profile" element={<MyProfilePage />} />
+        <Route path="approvals" element={<ApprovalsPage />} />
+        <Route path="reimbursements" element={<ReimbursementsPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

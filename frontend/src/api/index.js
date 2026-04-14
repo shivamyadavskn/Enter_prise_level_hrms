@@ -137,6 +137,14 @@ export const notificationsApi = {
   clearAll: () => api.delete('/notifications/clear-all'),
 }
 
+// ── Reimbursements ────────────────────────────────────────────────────────────
+export const reimbursementsApi = {
+  getAll: (params) => api.get('/reimbursements', { params }),
+  create: (data) => api.post('/reimbursements', data),
+  approve: (id) => api.patch(`/reimbursements/${id}/approve`),
+  reject: (id, data) => api.patch(`/reimbursements/${id}/reject`, data),
+}
+
 // ── Reports ───────────────────────────────────────────────────────────────────
 export const reportsApi = {
   getDashboard: () => api.get('/reports/dashboard'),

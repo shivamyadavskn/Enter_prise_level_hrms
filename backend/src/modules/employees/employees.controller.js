@@ -101,7 +101,7 @@ export const updateEmployee = async (req, res) => {
     if (req.user.role === "EMPLOYEE") {
       const self = await prisma.employee.findFirst({ where: { userId: req.user.id } });
       if (!self || self.id !== id) return R.forbidden(res, "Access denied");
-      const allowedFields = ["phone", "address", "city", "state", "country", "postalCode", "emergencyContactName", "emergencyContactPhone"];
+      const allowedFields = ["phone", "address", "city", "state", "country", "postalCode", "emergencyContactName", "emergencyContactPhone", "bankName", "bankAccountNumber", "bankIFSC", "bankAccountHolder", "panNumber"];
       const filtered = Object.fromEntries(Object.entries(req.body).filter(([k]) => allowedFields.includes(k)));
       req.body = filtered;
     }

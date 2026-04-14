@@ -175,6 +175,8 @@ model Employee {
   reviewsAsEmployee       PerformanceReview[]     @relation("ReviewEmployee")
   reviewsAsReviewer       PerformanceReview[]     @relation("ReviewReviewer")
   documents               Document[]
+  reimbursementClaims     ReimbursementClaim[]
+  reimbursementApprovals  ReimbursementClaim[] @relation("ReimbursementApprover")
 
   @@map("employees")
 }
@@ -444,6 +446,27 @@ model Notification {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("notifications")
+}
+
+model ReimbursementClaim {
+  id          Int      @id @default(autoincrement())
+  employeeId  Int
+  title       String
+  description String?
+  totalAmount Float
+  status      String   @default("PENDING")
+  claimDate   DateTime @default(now())
+  approvedById Int?
+  approvedOn  DateTime?
+  rejectionReason String?
+  items       Json
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  employee   Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  approvedBy Employee? @relation("ReimbursementApprover", fields: [approvedById], references: [id])
+
+  @@map("reimbursement_claims")
 }
 
 model Holiday {
