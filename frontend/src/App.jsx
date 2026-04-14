@@ -21,6 +21,7 @@ import DesignationsPage from './pages/designations/DesignationsPage.jsx'
 import MyProfilePage from './pages/profile/MyProfilePage.jsx'
 import ApprovalsPage from './pages/approvals/ApprovalsPage.jsx'
 import ReimbursementsPage from './pages/reimbursements/ReimbursementsPage.jsx'
+import OnboardingPage from './pages/onboarding/OnboardingPage.jsx'
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth()
@@ -60,6 +61,7 @@ function AppRoutes() {
         <Route path="profile" element={<MyProfilePage />} />
         <Route path="approvals" element={<ApprovalsPage />} />
         <Route path="reimbursements" element={<ReimbursementsPage />} />
+        <Route path="onboarding" element={<OnboardingPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

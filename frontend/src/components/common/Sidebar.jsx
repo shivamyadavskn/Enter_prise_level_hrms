@@ -8,6 +8,7 @@ import {
   DocumentTextIcon, BellIcon, PresentationChartLineIcon,
   FolderOpenIcon, SunIcon, DocumentDuplicateIcon,
   BriefcaseIcon, CheckCircleIcon, CurrencyDollarIcon, UserCircleIcon,
+  ClipboardDocumentListIcon,
 } from '@heroicons/react/24/outline'
 import { useAuth } from '../../contexts/AuthContext.jsx'
 import clsx from 'clsx'
@@ -28,6 +29,7 @@ const navigation = [
   { name: 'Holidays',      href: '/holidays',     icon: SunIcon,                     roles: ['ALL'] },
   { name: 'Reports',       href: '/reports',      icon: PresentationChartLineIcon,   roles: ['SUPER_ADMIN','ADMIN','MANAGER','FINANCE'] },
   { name: 'Reimbursements',href: '/reimbursements',icon: CurrencyDollarIcon,          roles: ['ALL'] },
+  { name: 'Onboarding',    href: '/onboarding',   icon: ClipboardDocumentListIcon,   roles: ['ALL'] },
   { name: 'Notifications', href: '/notifications',icon: BellIcon,                   roles: ['ALL'] },
   { name: 'My Profile',    href: '/profile',      icon: UserCircleIcon,              roles: ['ALL'] },
 ]

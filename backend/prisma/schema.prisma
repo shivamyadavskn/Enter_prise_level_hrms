@@ -183,8 +183,41 @@ model Employee {
   reimbursementApprovals  ReimbursementClaim[] @relation("ReimbursementApprover")
   experiences             EmployeeExperience[]
   educations              EmployeeEducation[]
+  onboardingItems         EmployeeOnboarding[]
 
   @@map("employees")
+}
+
+model OnboardingTask {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String?
+  category    String   @default("General")
+  isRequired  Boolean  @default(true)
+  order       Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  employeeItems EmployeeOnboarding[]
+
+  @@map("onboarding_tasks")
+}
+
+model EmployeeOnboarding {
+  id          Int       @id @default(autoincrement())
+  employeeId  Int
+  taskId      Int
+  status      String    @default("PENDING")
+  completedAt DateTime?
+  remarks     String?
+  completedBy Int?
+  createdAt   DateTime  @default(now())
+
+  employee Employee        @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  task     OnboardingTask  @relation(fields: [taskId], references: [id])
+
+  @@unique([employeeId, taskId])
+  @@map("employee_onboarding")
 }
 
 model EmployeeExperience {

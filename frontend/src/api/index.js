@@ -153,6 +153,19 @@ export const reimbursementsApi = {
   reject: (id, data) => api.patch(`/reimbursements/${id}/reject`, data),
 }
 
+// ── Onboarding ────────────────────────────────────────────────────────────────
+export const onboardingApi = {
+  getTasks: () => api.get('/onboarding/tasks'),
+  createTask: (data) => api.post('/onboarding/tasks', data),
+  updateTask: (id, data) => api.put(`/onboarding/tasks/${id}`, data),
+  deleteTask: (id) => api.delete(`/onboarding/tasks/${id}`),
+  getMyChecklist: () => api.get('/onboarding/my'),
+  getAllChecklists: (params) => api.get('/onboarding/all', { params }),
+  getEmployeeChecklist: (empId) => api.get(`/onboarding/${empId}`),
+  initChecklist: (empId) => api.post(`/onboarding/${empId}/init`),
+  updateItem: (id, data) => api.patch(`/onboarding/item/${id}`, data),
+}
+
 // ── Reports ───────────────────────────────────────────────────────────────────
 export const reportsApi = {
   getDashboard: () => api.get('/reports/dashboard'),

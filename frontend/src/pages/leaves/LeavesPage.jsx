@@ -7,9 +7,13 @@ import Modal from '../../components/common/Modal.jsx'
 import Pagination from '../../components/common/Pagination.jsx'
 import EmptyState from '../../components/common/EmptyState.jsx'
 import { PageLoader } from '../../components/common/LoadingSpinner.jsx'
-import { PlusIcon, CheckIcon, XMarkIcon, SparklesIcon } from '@heroicons/react/24/outline'
+import { PlusIcon, CheckIcon, XMarkIcon, SparklesIcon, Cog6ToothIcon, AdjustmentsHorizontalIcon, PencilIcon } from '@heroicons/react/24/outline'
 import toast from 'react-hot-toast'
 import { format } from 'date-fns'
+
+const inputCls = 'mt-1 block w-full rounded-md border-0 py-1.5 px-3 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-primary-600 sm:text-sm'
+const labelCls = 'block text-sm font-medium text-gray-700'
+const emptyLT = { name: '', code: '', annualQuota: 12, carryForwardAllowed: false, maxCarryForward: 0, encashmentAllowed: false, requiresDocument: false }
 
 function ApplyLeaveModal({ open, onClose, leaveTypes, onSubmit, loading }) {
   const [form, setForm] = useState({ leaveTypeId: '', startDate: '', endDate: '', reason: '', approverId: '' })
@@ -97,10 +101,15 @@ export default function LeavesPage() {
   const qc = useQueryClient()
   const [page, setPage] = useState(1)
   const [statusFilter, setStatusFilter] = useState('')
+  const [tab, setTab] = useState('applications')
   const [applyModal, setApplyModal] = useState(false)
   const [rejectModal, setRejectModal] = useState(null)
   const [allocateModal, setAllocateModal] = useState(false)
   const [allocateYear, setAllocateYear] = useState(new Date().getFullYear())
+  const [ltModal, setLtModal] = useState(null)
+  const [ltForm, setLtForm] = useState(emptyLT)
+  const [adjModal, setAdjModal] = useState(false)
+  const [adjForm, setAdjForm] = useState({ employeeId: '', leaveTypeId: '', year: new Date().getFullYear(), available: '' })
 
   const { data, isLoading } = useQuery({
     queryKey: ['leaves', page, statusFilter],
@@ -139,13 +148,36 @@ export default function LeavesPage() {
     },
   })
 
+  const createLtMut = useMutation({
+    mutationFn: (d) => ltForm.id ? leavesApi.updateType(ltForm.id, d) : leavesApi.createType(d),
+    onSuccess: () => { qc.invalidateQueries(['leave-types']); setLtModal(null); toast.success(ltForm.id ? 'Leave type updated' : 'Leave type created') },
+    onError: (e) => toast.error(e.response?.data?.message || 'Failed'),
+  })
+
+  const adjMut = useMutation({
+    mutationFn: leavesApi.adjustBalance,
+    onSuccess: () => { qc.invalidateQueries(['leave-balance']); setAdjModal(false); toast.success('Balance adjusted') },
+    onError: (e) => toast.error(e.response?.data?.message || 'Failed'),
+  })
+
+  const { data: empListData } = useQuery({
+    queryKey: ['emp-list-leaves'],
+    queryFn: () => employeesApi.getAll({ limit: 200 }),
+    enabled: isAdmin(),
+  })
+
   const leaves = data?.data?.data || []
   const pagination = data?.data?.pagination
   const leaveTypes = typesData?.data?.data || []
   const balances = balanceData?.data?.data || []
+  const allEmployees = empListData?.data?.data || []
 
   const myEmpCode = user?.employee?.employeeCode
   const isOwnLeave = (l) => l.employee?.employeeCode === myEmpCode
+
+  const openLt = (lt = null) => { setLtForm(lt ? { ...lt } : emptyLT); setLtModal(true) }
+  const submitLt = (e) => { e.preventDefault(); const d = { ...ltForm, annualQuota: Number(ltForm.annualQuota), maxCarryForward: Number(ltForm.maxCarryForward || 0) }; delete d.id; createLtMut.mutate(d) }
+  const submitAdj = (e) => { e.preventDefault(); adjMut.mutate({ ...adjForm, employeeId: Number(adjForm.employeeId), leaveTypeId: Number(adjForm.leaveTypeId), year: Number(adjForm.year), available: Number(adjForm.available) }) }
 
   return (
     <div className="space-y-6">
@@ -156,9 +188,14 @@ export default function LeavesPage() {
         </div>
         <div className="flex gap-2">
           {isAdmin() && (
-            <button onClick={() => setAllocateModal(true)} className="inline-flex items-center gap-2 rounded-md border border-primary-300 bg-primary-50 px-3 py-2 text-sm font-semibold text-primary-700 hover:bg-primary-100">
-              <SparklesIcon className="h-4 w-4" /> Allocate Leaves
-            </button>
+            <>
+              <button onClick={() => setAdjModal(true)} className="inline-flex items-center gap-2 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">
+                <AdjustmentsHorizontalIcon className="h-4 w-4" /> Adjust Balance
+              </button>
+              <button onClick={() => setAllocateModal(true)} className="inline-flex items-center gap-2 rounded-md border border-primary-300 bg-primary-50 px-3 py-2 text-sm font-semibold text-primary-700 hover:bg-primary-100">
+                <SparklesIcon className="h-4 w-4" /> Allocate Leaves
+              </button>
+            </>
           )}
           <button onClick={() => setApplyModal(true)} className="inline-flex items-center gap-2 rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white hover:bg-primary-500">
             <PlusIcon className="h-4 w-4" /> Apply Leave
@@ -166,6 +203,64 @@ export default function LeavesPage() {
         </div>
       </div>
 
+      {/* Admin Tabs */}
+      {isAdmin() && (
+        <div className="flex gap-1 border-b border-gray-200">
+          {[{ id: 'applications', label: 'Applications' }, { id: 'types', label: 'Leave Types', icon: Cog6ToothIcon }].map(({ id, label, icon: Icon }) => (
+            <button key={id} onClick={() => setTab(id)}
+              className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${tab === id ? 'border-primary-600 text-primary-700' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
+              {Icon && <Icon className="h-4 w-4" />} {label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* ── Leave Types Tab (Admin) ── */}
+      {tab === 'types' && isAdmin() && (
+        <div className="space-y-4">
+          <div className="flex justify-end">
+            <button onClick={() => openLt()} className="inline-flex items-center gap-2 rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white hover:bg-primary-500">
+              <PlusIcon className="h-4 w-4" /> New Leave Type
+            </button>
+          </div>
+          {leaveTypes.length === 0 ? (
+            <EmptyState title="No leave types" description="Create leave types like Casual Leave, Sick Leave, etc." />
+          ) : (
+            <div className="overflow-hidden rounded-lg bg-white shadow">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    {['Name', 'Code', 'Annual Days', 'Carry Forward', 'Encashment', 'Doc Required', 'Actions'].map(h => (
+                      <th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200 bg-white">
+                  {leaveTypes.map(lt => (
+                    <tr key={lt.id} className="hover:bg-gray-50">
+                      <td className="px-4 py-3 text-sm font-medium text-gray-900">{lt.name}</td>
+                      <td className="px-4 py-3"><span className="inline-flex items-center rounded-full bg-primary-50 px-2.5 py-0.5 text-xs font-medium text-primary-700">{lt.code}</span></td>
+                      <td className="px-4 py-3 text-sm text-gray-900 font-semibold">{lt.annualQuota} days</td>
+                      <td className="px-4 py-3 text-sm text-gray-500">{lt.carryForwardAllowed ? `Yes (max ${lt.maxCarryForward || '∞'})` : 'No'}</td>
+                      <td className="px-4 py-3 text-sm text-gray-500">{lt.encashmentAllowed ? 'Yes' : 'No'}</td>
+                      <td className="px-4 py-3 text-sm text-gray-500">{lt.requiresDocument ? 'Yes' : 'No'}</td>
+                      <td className="px-4 py-3">
+                        <button onClick={() => openLt(lt)} className="flex items-center gap-1 text-xs text-primary-600 hover:text-primary-500">
+                          <PencilIcon className="h-3.5 w-3.5" /> Edit
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Applications Tab ── */}
+      {tab === 'applications' && (
+      <>
       {/* Balance Cards */}
       {balances.length > 0 && (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
@@ -266,6 +361,93 @@ export default function LeavesPage() {
             </button>
           </div>
         </div>
+      </Modal>
+      </>
+      )}
+
+      {/* ── Leave Type Modal ── */}
+      <Modal open={!!ltModal} onClose={() => setLtModal(null)} title={ltForm.id ? 'Edit Leave Type' : 'New Leave Type'} size="sm">
+        <form onSubmit={submitLt} className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className={labelCls}>Name *</label>
+              <input required value={ltForm.name} onChange={e => setLtForm({ ...ltForm, name: e.target.value })} className={inputCls} placeholder="Casual Leave" />
+            </div>
+            <div>
+              <label className={labelCls}>Code *</label>
+              <input required value={ltForm.code} onChange={e => setLtForm({ ...ltForm, code: e.target.value.toUpperCase() })} className={inputCls} placeholder="CL" disabled={!!ltForm.id} />
+            </div>
+          </div>
+          <div>
+            <label className={labelCls}>Annual Quota (days) *</label>
+            <input type="number" required min={0} value={ltForm.annualQuota} onChange={e => setLtForm({ ...ltForm, annualQuota: e.target.value })} className={inputCls} />
+          </div>
+          <div className="grid grid-cols-1 gap-3">
+            {[
+              ['carryForwardAllowed', 'Allow Carry Forward'],
+              ['encashmentAllowed', 'Allow Encashment'],
+              ['requiresDocument', 'Requires Supporting Document'],
+            ].map(([k, label]) => (
+              <label key={k} className="flex items-center gap-3 text-sm text-gray-700 cursor-pointer">
+                <input type="checkbox" checked={!!ltForm[k]} onChange={e => setLtForm({ ...ltForm, [k]: e.target.checked })} className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500" />
+                {label}
+              </label>
+            ))}
+          </div>
+          {ltForm.carryForwardAllowed && (
+            <div>
+              <label className={labelCls}>Max Carry Forward Days <span className="text-gray-400">(0 = unlimited)</span></label>
+              <input type="number" min={0} value={ltForm.maxCarryForward} onChange={e => setLtForm({ ...ltForm, maxCarryForward: e.target.value })} className={inputCls} />
+            </div>
+          )}
+          <div className="flex justify-end gap-3 pt-2">
+            <button type="button" onClick={() => setLtModal(null)} className="rounded-md px-3 py-2 text-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">Cancel</button>
+            <button type="submit" disabled={createLtMut.isPending} className="rounded-md bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-500 disabled:opacity-50">
+              {createLtMut.isPending ? 'Saving…' : (ltForm.id ? 'Update' : 'Create')}
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* ── Balance Adjustment Modal ── */}
+      <Modal open={adjModal} onClose={() => setAdjModal(false)} title="Adjust Leave Balance" size="sm">
+        <form onSubmit={submitAdj} className="space-y-4">
+          <div className="rounded-lg bg-blue-50 border border-blue-200 p-3 text-sm text-blue-700">
+            Manually override the available leave balance for a specific employee, leave type, and year.
+          </div>
+          <div>
+            <label className={labelCls}>Employee *</label>
+            <select required value={adjForm.employeeId} onChange={e => setAdjForm({ ...adjForm, employeeId: e.target.value })} className={inputCls}>
+              <option value="">Select employee</option>
+              {allEmployees.map(e => <option key={e.id} value={e.id}>{e.firstName} {e.lastName} ({e.employeeCode})</option>)}
+            </select>
+          </div>
+          <div>
+            <label className={labelCls}>Leave Type *</label>
+            <select required value={adjForm.leaveTypeId} onChange={e => setAdjForm({ ...adjForm, leaveTypeId: e.target.value })} className={inputCls}>
+              <option value="">Select leave type</option>
+              {leaveTypes.map(lt => <option key={lt.id} value={lt.id}>{lt.name} ({lt.code})</option>)}
+            </select>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className={labelCls}>Year *</label>
+              <select required value={adjForm.year} onChange={e => setAdjForm({ ...adjForm, year: e.target.value })} className={inputCls}>
+                {[2024, 2025, 2026, 2027].map(y => <option key={y} value={y}>{y}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className={labelCls}>New Available Days *</label>
+              <input type="number" required min={0} step={0.5} value={adjForm.available} onChange={e => setAdjForm({ ...adjForm, available: e.target.value })} className={inputCls} placeholder="12" />
+            </div>
+          </div>
+          <div className="flex justify-end gap-3">
+            <button type="button" onClick={() => setAdjModal(false)} className="rounded-md px-3 py-2 text-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">Cancel</button>
+            <button type="submit" disabled={adjMut.isPending} className="rounded-md bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-500 disabled:opacity-50">
+              {adjMut.isPending ? 'Saving…' : 'Adjust Balance'}
+            </button>
+          </div>
+        </form>
       </Modal>
     </div>
   )

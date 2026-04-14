@@ -80,6 +80,7 @@ export default function PayrollPage() {
   const [processModal, setProcessModal] = useState(false)
   const [slipModal, setSlipModal] = useState(null)
   const [salaryModal, setSalaryModal] = useState(null)
+  const [historyModal, setHistoryModal] = useState(null)
   const [skippedResult, setSkippedResult] = useState([])
   const [salaryForm, setSalaryForm] = useState({ basicSalary: '', hra: '', conveyanceAllowance: 1600, medicalAllowance: 1250, specialAllowance: '', pfEmployee: '', pfEmployer: '', professionalTax: 200, tds: '', effectiveFrom: new Date().toISOString().split('T')[0] })
 
@@ -136,6 +137,13 @@ export default function PayrollPage() {
     enabled: !!slipModal?.id,
   })
   const fullSlip = slipDetail?.data?.data || slipModal
+
+  const { data: salHistoryData } = useQuery({
+    queryKey: ['salary-history', historyModal?.employeeId],
+    queryFn: () => payrollApi.getSalaryStructure(historyModal.employeeId),
+    enabled: !!historyModal?.employeeId,
+  })
+  const salHistory = salHistoryData?.data?.data || []
 
   const payrolls = data?.data?.data || []
   const pagination = data?.data?.pagination
@@ -260,6 +268,10 @@ export default function PayrollPage() {
                           <button onClick={() => updateStatusMut.mutate({ id: p.id, data: { paymentStatus: 'PAID', paymentDate: new Date().toISOString().split('T')[0] } })}
                             className="text-xs text-green-600 hover:text-green-500 font-medium">Mark Paid</button>
                         )}
+                        {isFinanceOrAdmin && (
+                          <button onClick={() => setHistoryModal({ employeeId: p.employeeId, name: `${p.employee?.firstName} ${p.employee?.lastName}` })}
+                            className="text-xs text-gray-400 hover:text-gray-600">History</button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -346,6 +358,37 @@ export default function PayrollPage() {
               </button>
             </div>
           </div>
+        </Modal>
+      )}
+
+      {/* Salary History Modal */}
+      {historyModal && (
+        <Modal open={!!historyModal} onClose={() => setHistoryModal(null)} title={`Salary History — ${historyModal.name}`} size="lg">
+          {salHistory.length === 0 ? (
+            <p className="text-sm text-gray-500 text-center py-8">No salary structures on record.</p>
+          ) : (
+            <div className="space-y-3">
+              {salHistory.map((s, i) => (
+                <div key={s.id} className={`rounded-lg border p-4 ${s.isActive ? 'border-primary-200 bg-primary-50' : 'border-gray-200 bg-white'}`}>
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-semibold text-gray-900">Effective from {new Date(s.effectiveFrom).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+                      {s.isActive && <span className="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">Current</span>}
+                    </div>
+                    <span className="text-sm font-bold text-primary-600">₹{Number(s.netSalary).toLocaleString('en-IN')}/mo</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-3 text-xs">
+                    {[['Basic', s.basicSalary], ['HRA', s.hra], ['Conveyance', s.conveyanceAllowance], ['Medical', s.medicalAllowance], ['Special Allow.', s.specialAllowance], ['Gross', s.grossSalary], ['PF (Emp)', s.pfEmployee], ['Prof. Tax', s.professionalTax], ['TDS', s.tds], ['Total Deduct.', s.totalDeductions], ['Net Pay', s.netSalary], ['CTC', s.ctc]].map(([l, v]) => (
+                      <div key={l} className={`flex justify-between border-b border-gray-100 pb-1 ${['Gross','Net Pay','CTC'].includes(l) ? 'font-semibold' : ''}`}>
+                        <span className="text-gray-500">{l}</span>
+                        <span className={l === 'Net Pay' ? 'text-primary-600' : l === 'Total Deduct.' ? 'text-red-600' : 'text-gray-800'}>₹{Number(v || 0).toLocaleString('en-IN')}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </Modal>
       )}
 

@@ -11,7 +11,7 @@ import { ArrowUpTrayIcon, ArrowDownTrayIcon, TrashIcon, DocumentTextIcon } from 
 import toast from 'react-hot-toast'
 import { format } from 'date-fns'
 
-const DOC_TYPES = ['ID_PROOF','ADDRESS_PROOF','EDUCATION','EXPERIENCE','OFFER_LETTER','CONTRACT','PAYSLIP','OTHER']
+const DOC_TYPES = ['ID_PROOF','ADDRESS_PROOF','EDUCATION','EXPERIENCE','OFFER_LETTER','APPOINTMENT_LETTER','CONFIRMATION_LETTER','RELIEVING_LETTER','RESIGNATION_LETTER','CONTRACT','PAYSLIP','OTHER']
 
 export default function DocumentsPage() {
   const { user, isAdmin } = useAuth()
