@@ -1,6 +1,7 @@
 import { forbidden } from "../utils/response.js";
 
 export const UserRole = {
+  PLATFORM_ADMIN: "PLATFORM_ADMIN",
   SUPER_ADMIN: "SUPER_ADMIN",
   ADMIN: "ADMIN",
   MANAGER: "MANAGER",
@@ -9,6 +10,7 @@ export const UserRole = {
 };
 
 const ROLE_HIERARCHY = {
+  PLATFORM_ADMIN: 99,
   SUPER_ADMIN: 5,
   ADMIN: 4,
   MANAGER: 3,
@@ -19,6 +21,7 @@ const ROLE_HIERARCHY = {
 export const authorize = (...allowedRoles) => {
   return (req, res, next) => {
     if (!req.user) return forbidden(res);
+    if (req.user.role === "PLATFORM_ADMIN") return next();
     if (!allowedRoles.includes(req.user.role)) {
       return forbidden(res, `Access restricted to: ${allowedRoles.join(", ")}`);
     }

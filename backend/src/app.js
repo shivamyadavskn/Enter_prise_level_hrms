@@ -24,6 +24,7 @@ import holidayRoutes from "./modules/holidays/holidays.routes.js";
 import reimbursementRoutes from "./modules/reimbursements/reimbursements.routes.js";
 import onboardingRoutes from "./modules/onboarding/onboarding.routes.js";
 import organisationRoutes from "./modules/organisation/organisation.routes.js";
+import platformRoutes from "./modules/platform/platform.routes.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -91,6 +92,7 @@ app.use("/api/holidays", holidayRoutes);
 app.use("/api/reimbursements", reimbursementRoutes);
 app.use("/api/onboarding", onboardingRoutes);
 app.use("/api/organisation", organisationRoutes);
+app.use("/api/platform", platformRoutes);
 
 // ── 404 Handler ───────────────────────────────────────────────────────────────
 app.use((req, res) => {

@@ -2,12 +2,14 @@ import { useState } from 'react'
 import { Outlet } from 'react-router-dom'
 import Sidebar from '../components/common/Sidebar.jsx'
 import Header from '../components/common/Header.jsx'
+import PlatformBanner from '../components/common/PlatformBanner.jsx'
 
 export default function AppLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   return (
     <div className="h-full">
+      <PlatformBanner />
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       <div className="lg:pl-72">

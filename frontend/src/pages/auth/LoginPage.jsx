@@ -75,7 +75,13 @@ export default function LoginPage() {
               </p>
             </form>
 
-            <div className="mt-8">
+            <div className="mt-4 text-center">
+              <Link to="/platform/setup" className="text-xs text-gray-400 hover:text-gray-500">
+                Platform admin setup →
+              </Link>
+            </div>
+
+            <div className="mt-6">
               <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">Demo Credentials</p>
               <div className="grid grid-cols-1 gap-2">
                 {[

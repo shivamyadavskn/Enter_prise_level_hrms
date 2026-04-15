@@ -9,6 +9,15 @@ export const authApi = {
   changePassword: (data) => api.put('/auth/change-password', data),
 }
 
+// ── Platform (Super-Admin god mode) ───────────────────────────────────────────
+export const platformApi = {
+  seed: (data) => api.post('/platform/seed', data),
+  stats: () => api.get('/platform/stats'),
+  listOrgs: (params) => api.get('/platform/organisations', { params }),
+  getOrg: (id) => api.get(`/platform/organisations/${id}`),
+  toggleOrg: (id) => api.patch(`/platform/organisations/${id}/toggle`),
+}
+
 // ── Organisation ──────────────────────────────────────────────────────────────
 export const organisationApi = {
   register: (data) => api.post('/organisation/register', data),

@@ -1,6 +1,9 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './contexts/AuthContext.jsx'
 import AppLayout from './layouts/AppLayout.jsx'
+import PlatformLayout from './layouts/PlatformLayout.jsx'
+import PlatformDashboardPage from './pages/platform/PlatformDashboardPage.jsx'
+import PlatformSetupPage from './pages/platform/PlatformSetupPage.jsx'
 import LoginPage from './pages/auth/LoginPage.jsx'
 import DashboardPage from './pages/dashboard/DashboardPage.jsx'
 import EmployeesPage from './pages/employees/EmployeesPage.jsx'
@@ -26,9 +29,18 @@ import RegisterPage from './pages/auth/RegisterPage.jsx'
 import OrganisationSettingsPage from './pages/organisation/OrganisationSettingsPage.jsx'
 
 function ProtectedRoute({ children }) {
+  const { user, loading, activeOrg } = useAuth()
+  if (loading) return <div className="flex h-screen items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-4 border-primary-600 border-t-transparent" /></div>
+  if (!user) return <Navigate to="/login" replace />
+  if (user.role === 'PLATFORM_ADMIN' && !activeOrg) return <Navigate to="/platform" replace />
+  return children
+}
+
+function PlatformRoute({ children }) {
   const { user, loading } = useAuth()
   if (loading) return <div className="flex h-screen items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-4 border-primary-600 border-t-transparent" /></div>
   if (!user) return <Navigate to="/login" replace />
+  if (user.role !== 'PLATFORM_ADMIN') return <Navigate to="/" replace />
   return children
 }
 
@@ -43,7 +55,7 @@ function AdminRoute({ children }) {
 function PublicRoute({ children }) {
   const { user, loading } = useAuth()
   if (loading) return null
-  if (user) return <Navigate to="/" replace />
+  if (user) return <Navigate to={user.role === 'PLATFORM_ADMIN' ? '/platform' : '/'} replace />
   return children
 }
 
@@ -52,6 +64,7 @@ function AppRoutes() {
     <Routes>
       <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
       <Route path="/register" element={<PublicRoute><RegisterPage /></PublicRoute>} />
+      <Route path="/platform/setup" element={<PublicRoute><PlatformSetupPage /></PublicRoute>} />
       <Route path="/" element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
         <Route index element={<DashboardPage />} />
         <Route path="employees" element={<EmployeesPage />} />
@@ -74,6 +87,9 @@ function AppRoutes() {
         <Route path="reimbursements" element={<ReimbursementsPage />} />
         <Route path="onboarding" element={<OnboardingPage />} />
         <Route path="organisation" element={<AdminRoute><OrganisationSettingsPage /></AdminRoute>} />
+      </Route>
+      <Route path="/platform" element={<PlatformRoute><PlatformLayout /></PlatformRoute>}>
+        <Route index element={<PlatformDashboardPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

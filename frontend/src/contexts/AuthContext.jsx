@@ -7,6 +7,9 @@ const AuthContext = createContext(null)
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [activeOrg, setActiveOrgState] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('activeOrg')) } catch { return null }
+  })
 
   const loadUser = useCallback(async () => {
     const token = localStorage.getItem('accessToken')
@@ -39,17 +42,29 @@ export function AuthProvider({ children }) {
     } catch {}
     localStorage.clear()
     setUser(null)
+    setActiveOrgState(null)
     toast.success('Logged out successfully')
+  }
+
+  const enterOrg = (org) => {
+    localStorage.setItem('activeOrg', JSON.stringify(org))
+    setActiveOrgState(org)
+  }
+
+  const exitOrg = () => {
+    localStorage.removeItem('activeOrg')
+    setActiveOrgState(null)
   }
 
   const hasRole = (...roles) => roles.includes(user?.role)
 
-  const isAdmin = () => hasRole('SUPER_ADMIN', 'ADMIN')
-  const isManager = () => hasRole('SUPER_ADMIN', 'ADMIN', 'MANAGER')
-  const isFinance = () => hasRole('SUPER_ADMIN', 'ADMIN', 'FINANCE')
+  const isPlatformAdmin = () => user?.role === 'PLATFORM_ADMIN'
+  const isAdmin = () => hasRole('PLATFORM_ADMIN', 'SUPER_ADMIN', 'ADMIN')
+  const isManager = () => hasRole('PLATFORM_ADMIN', 'SUPER_ADMIN', 'ADMIN', 'MANAGER')
+  const isFinance = () => hasRole('PLATFORM_ADMIN', 'SUPER_ADMIN', 'ADMIN', 'FINANCE')
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, hasRole, isAdmin, isManager, isFinance }}>
+    <AuthContext.Provider value={{ user, loading, activeOrg, login, logout, enterOrg, exitOrg, hasRole, isPlatformAdmin, isAdmin, isManager, isFinance }}>
       {children}
     </AuthContext.Provider>
   )

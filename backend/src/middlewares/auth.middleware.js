@@ -25,7 +25,13 @@ export const authenticate = async (req, res, next) => {
     if (!user || !user.isActive) return unauthorized(res, "User not found or inactive");
 
     req.user = user;
-    req.organisationId = user.organisationId;
+    if (user.role === "PLATFORM_ADMIN") {
+      const headerOrgId = req.headers["x-org-id"];
+      req.organisationId = headerOrgId ? Number(headerOrgId) : null;
+      req.isPlatformAdmin = true;
+    } else {
+      req.organisationId = user.organisationId;
+    }
     next();
   } catch (err) {
     if (err.name === "TokenExpiredError") return unauthorized(res, "Token expired");
