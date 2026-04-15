@@ -82,7 +82,7 @@ export default function EmployeesPage() {
       {/* Table */}
       <div className="overflow-hidden rounded-lg bg-white shadow">
         {isLoading ? <PageLoader /> : employees.length === 0 ? (
-          <EmptyState title="No employees found" description="Try adjusting your search or filters." />
+          <EmptyState variant="employees" title="No employees found" description="Try adjusting your search or filters." />
         ) : (
           <>
             <table className="min-w-full divide-y divide-gray-200">

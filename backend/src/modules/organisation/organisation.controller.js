@@ -1,6 +1,7 @@
 import prisma from "../../config/prisma.js";
 import * as R from "../../utils/response.js";
 import bcrypt from "bcryptjs";
+import { sendOrganisationWelcome } from "../../services/email.service.js";
 
 export const registerOrganisation = async (req, res) => {
   try {
@@ -48,6 +49,13 @@ export const registerOrganisation = async (req, res) => {
 
       return { org, user };
     });
+
+    sendOrganisationWelcome({
+      email: adminEmail,
+      firstName: adminFirstName,
+      orgName: result.org.name,
+      loginEmail: adminEmail,
+    }).catch(() => {});
 
     return R.created(res, { organisationId: result.org.id, slug: result.org.slug, name: result.org.name }, "Organisation registered successfully. Please login.");
   } catch (err) {

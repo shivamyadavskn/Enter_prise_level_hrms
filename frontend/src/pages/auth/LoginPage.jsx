@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext.jsx'
 import toast from 'react-hot-toast'
+import HrDashboardIllustration from '../../assets/illustrations/HrDashboardIllustration.jsx'
 
 export default function LoginPage() {
   const { login } = useAuth()
@@ -108,19 +109,33 @@ export default function LoginPage() {
       </div>
 
       <div className="relative hidden w-0 flex-1 lg:block">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary-600 to-primary-900 flex items-center justify-center">
-          <div className="text-center text-white px-12">
-            <h1 className="text-4xl font-bold mb-4">HRMS Enterprise</h1>
-            <p className="text-primary-200 text-lg leading-relaxed">
-              Streamline your HR operations with our comprehensive management platform.
-              Manage employees, leaves, attendance, payroll and more.
+        <div className="absolute inset-0 bg-gradient-to-br from-primary-700 via-primary-800 to-violet-900 flex flex-col items-center justify-center overflow-hidden px-12">
+          {/* Decorative background circles */}
+          <div className="absolute -top-24 -right-24 h-96 w-96 rounded-full bg-white opacity-5" />
+          <div className="absolute -bottom-32 -left-16 h-72 w-72 rounded-full bg-white opacity-5" />
+
+          {/* Headline */}
+          <div className="relative z-10 w-full max-w-lg text-center">
+            <div className="inline-flex items-center gap-2 rounded-full bg-white/10 border border-white/20 px-4 py-1.5 mb-6">
+              <div className="h-2 w-2 rounded-full bg-green-400 animate-pulse" />
+              <span className="text-xs font-medium text-white/80 uppercase tracking-widest">Enterprise HRMS</span>
+            </div>
+            <h1 className="text-4xl font-bold text-white leading-tight mb-3">
+              Your entire HR<br />in one place
+            </h1>
+            <p className="text-primary-200 text-base leading-relaxed mb-8">
+              Manage employees, track leaves, process payroll, and get real-time insights — all from a single dashboard.
             </p>
-            <div className="mt-10 grid grid-cols-2 gap-6 text-left">
-              {['Employee Management', 'Leave Tracking', 'Attendance System', 'Payroll Processing', 'Performance Reviews', 'Reports & Analytics'].map((f) => (
-                <div key={f} className="flex items-center gap-2">
-                  <div className="h-1.5 w-1.5 rounded-full bg-primary-300" />
-                  <span className="text-sm text-primary-100">{f}</span>
-                </div>
+
+            {/* Illustration */}
+            <HrDashboardIllustration className="w-full max-w-md mx-auto drop-shadow-2xl" />
+
+            {/* Feature pills */}
+            <div className="mt-8 flex flex-wrap justify-center gap-2">
+              {['👥 Employees', '📅 Leaves', '🕐 Attendance', '💰 Payroll', '📊 Reports', '🎯 Performance'].map((f) => (
+                <span key={f} className="rounded-full bg-white/10 border border-white/15 px-3 py-1 text-xs text-white/80 font-medium backdrop-blur-sm">
+                  {f}
+                </span>
               ))}
             </div>
           </div>

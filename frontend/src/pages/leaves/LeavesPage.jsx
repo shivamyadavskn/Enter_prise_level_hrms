@@ -224,7 +224,7 @@ export default function LeavesPage() {
             </button>
           </div>
           {leaveTypes.length === 0 ? (
-            <EmptyState title="No leave types" description="Create leave types like Casual Leave, Sick Leave, etc." />
+            <EmptyState variant="leaves" title="No leave types" description="Create leave types like Casual Leave, Sick Leave, etc." />
           ) : (
             <div className="overflow-hidden rounded-lg bg-white shadow">
               <table className="min-w-full divide-y divide-gray-200">
@@ -287,7 +287,7 @@ export default function LeavesPage() {
       {/* Table */}
       <div className="overflow-hidden rounded-lg bg-white shadow">
         {isLoading ? <PageLoader /> : leaves.length === 0 ? (
-          <EmptyState title="No leave applications" description="Apply for leave using the button above." />
+          <EmptyState variant="leaves" title="No leave applications" description="Apply for leave using the button above." />
         ) : (
           <>
             <table className="min-w-full divide-y divide-gray-200">

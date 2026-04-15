@@ -236,7 +236,7 @@ export default function PayrollPage() {
       {/* Payroll Table */}
       <div className="overflow-hidden rounded-lg bg-white shadow">
         {isLoading ? <PageLoader /> : payrolls.length === 0 ? (
-          <EmptyState title="No payroll records" description="Process payroll for the selected month." />
+          <EmptyState variant="payroll" title="No payroll records" description="Process payroll for the selected month." />
         ) : (
           <>
             <table className="min-w-full divide-y divide-gray-200">

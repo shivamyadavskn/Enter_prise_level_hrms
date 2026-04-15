@@ -346,3 +346,46 @@ export async function sendPasswordReset({ email, username, newPassword }) {
   `);
   await sendEmail({ to: email, subject: `Password Reset — ${COMPANY}`, html });
 }
+
+export async function sendOrganisationWelcome({ email, firstName, orgName, loginEmail }) {
+  const steps = [
+    ["1️⃣", "Configure your company settings", "Add your company address, PF/ESIC settings and financial year."],
+    ["2️⃣", "Add your employees", "Import employees via Excel or add them one by one."],
+    ["3️⃣", "Set up departments & designations", "Organise your workforce structure."],
+    ["4️⃣", "Configure leave types", "Set up annual leave, sick leave, and other leave policies."],
+  ];
+  const stepsHtml = steps.map(([icon, title, desc]) => `
+    <tr>
+      <td style="padding:10px 0;vertical-align:top;">
+        <table width="100%" cellpadding="0" cellspacing="0">
+          <tr>
+            <td style="width:36px;vertical-align:top;font-size:18px;">${icon}</td>
+            <td>
+              <p style="margin:0;font-size:14px;font-weight:600;color:#1e293b;">${title}</p>
+              <p style="margin:4px 0 0;font-size:13px;color:#64748b;">${desc}</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>`).join("");
+
+  const html = baseTemplate(`
+    ${badge("Welcome!", "purple")}
+    ${heading(`You're all set, ${firstName}! 🎉`)}
+    ${para(`Your company <strong>${orgName}</strong> has been successfully registered on ${COMPANY}. Your admin account is ready.`)}
+    ${infoTable([
+      ["Company", orgName],
+      ["Login Email", loginEmail],
+      ["Your Role", badge("Super Admin", "purple")],
+    ])}
+    ${btn("Login & Get Started →", `${APP_URL}/login`)}
+    ${divider()}
+    <p style="margin:0 0 16px;font-size:15px;font-weight:600;color:#1e293b;">🚀 Getting started checklist</p>
+    <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;border-radius:8px;padding:16px 20px;">
+      <tbody>${stepsHtml}</tbody>
+    </table>
+    ${divider()}
+    ${para('Need help? Reply to this email or visit our documentation. We\'re here to help!')}
+  `);
+  await sendEmail({ to: email, subject: `Welcome to ${COMPANY} — ${orgName} is live! 🎉`, html });
+}

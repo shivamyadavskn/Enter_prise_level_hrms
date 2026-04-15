@@ -136,7 +136,7 @@ export default function AttendancePage() {
           <h2 className="text-base font-semibold text-gray-900">Monthly Records</h2>
         </div>
         {isLoading ? <PageLoader /> : records.length === 0 ? (
-          <EmptyState title="No records" description="No attendance records for selected period." />
+          <EmptyState variant="attendance" title="No records" description="No attendance records for selected period." />
         ) : (
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
