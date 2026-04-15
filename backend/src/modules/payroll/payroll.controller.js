@@ -257,14 +257,17 @@ export const updatePaymentStatus = async (req, res) => {
     });
 
     if (paymentStatus === "PAID") {
-      await prisma.notification.create({
-        data: {
-          userId: (await prisma.employee.findUnique({ where: { id: payroll.employeeId }, include: { user: true } })).user.id,
-          notificationType: "PAYSLIP",
-          title: "Salary Credited",
-          message: `Your salary for ${payroll.month}/${payroll.year} has been credited. Net Pay: ₹${payroll.netSalary.toFixed(2)}`,
-        },
-      });
+      const emp = await prisma.employee.findUnique({ where: { id: payroll.employeeId }, include: { user: true } });
+      if (emp?.user) {
+        await prisma.notification.create({
+          data: {
+            userId: emp.user.id,
+            notificationType: "PAYSLIP",
+            title: "Salary Credited",
+            message: `Your salary for ${payroll.month}/${payroll.year} has been credited. Net Pay: ₹${payroll.netSalary.toFixed(2)}`,
+          },
+        });
+      }
     }
 
     return R.success(res, payroll, "Payment status updated");
@@ -279,8 +282,10 @@ export const getPayrollSummary = async (req, res) => {
     const m = Number(month) || new Date().getMonth() + 1;
     const y = Number(year) || new Date().getFullYear();
 
+    const payrollWhere = { month: m, year: y };
+    if (req.organisationId) payrollWhere.employee = { organisationId: req.organisationId };
     const payrolls = await prisma.payroll.findMany({
-      where: { month: m, year: y },
+      where: payrollWhere,
       include: { employee: { include: { department: { select: { name: true } } } } },
     });
 

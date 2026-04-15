@@ -103,6 +103,14 @@ export const getAttendance = async (req, res) => {
       }
     } else {
       if (employeeId) where.employeeId = Number(employeeId);
+      if (req.organisationId) {
+        const orgEmpIds = (await prisma.employee.findMany({ where: { organisationId: req.organisationId }, select: { id: true } })).map(e => e.id);
+        if (where.employeeId) {
+          if (!orgEmpIds.includes(where.employeeId)) return R.paginated(res, [], 0, page, limit);
+        } else {
+          where.employeeId = { in: orgEmpIds };
+        }
+      }
     }
 
     if (status) where.status = status;
@@ -156,6 +164,10 @@ export const getTodayStatus = async (req, res) => {
 export const markManualAttendance = async (req, res) => {
   try {
     const { employeeId, date, clockIn: ci, clockOut: co, status } = req.body;
+    if (req.organisationId) {
+      const target = await prisma.employee.findUnique({ where: { id: employeeId }, select: { organisationId: true } });
+      if (!target || target.organisationId !== req.organisationId) return R.forbidden(res, "Access denied");
+    }
     const totalHours = ci && co ? calcHours(new Date(ci), new Date(co)) : null;
 
     const record = await prisma.attendance.upsert({
@@ -250,6 +262,7 @@ export const approveRegularization = async (req, res) => {
 
     const reg = await prisma.attendanceRegularization.findUnique({ where: { id }, include: { employee: { include: { user: true } } } });
     if (!reg) return R.notFound(res, "Regularization not found");
+    if (req.organisationId && reg.employee.organisationId !== req.organisationId) return R.forbidden(res, "Access denied");
     if (reg.status !== "PENDING") return R.badRequest(res, "Already processed");
 
     await prisma.attendanceRegularization.update({
@@ -301,6 +314,7 @@ export const rejectRegularization = async (req, res) => {
 
     const reg = await prisma.attendanceRegularization.findUnique({ where: { id }, include: { employee: { include: { user: true } } } });
     if (!reg) return R.notFound(res, "Regularization not found");
+    if (req.organisationId && reg.employee.organisationId !== req.organisationId) return R.forbidden(res, "Access denied");
 
     const approver = await prisma.employee.findFirst({ where: { userId: req.user.id } });
 

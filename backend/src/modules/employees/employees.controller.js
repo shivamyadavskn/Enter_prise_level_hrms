@@ -69,6 +69,7 @@ export const getEmployeeById = async (req, res) => {
     });
 
     if (!employee) return R.notFound(res, "Employee not found");
+    if (req.organisationId && employee.organisationId !== req.organisationId) return R.forbidden(res, "Access denied");
     return R.success(res, employee);
   } catch (err) {
     return R.error(res, err.message);
@@ -79,9 +80,10 @@ export const createEmployee = async (req, res) => {
   try {
     const data = req.body;
 
-    const existing = await prisma.employee.findFirst({
-      where: { OR: [{ employeeCode: data.employeeCode }, { userId: data.userId }] },
-    });
+    const dupWhere = { OR: [{ employeeCode: data.employeeCode }] };
+    if (data.userId) dupWhere.OR.push({ userId: data.userId });
+    if (req.organisationId) dupWhere.organisationId = req.organisationId;
+    const existing = await prisma.employee.findFirst({ where: dupWhere });
     if (existing) return R.badRequest(res, "Employee code or user already exists");
 
     const employee = await prisma.employee.create({
@@ -115,6 +117,10 @@ export const createEmployee = async (req, res) => {
 export const updateEmployee = async (req, res) => {
   try {
     const id = Number(req.params.id);
+    if (req.organisationId) {
+      const target = await prisma.employee.findUnique({ where: { id }, select: { organisationId: true } });
+      if (!target || target.organisationId !== req.organisationId) return R.forbidden(res, "Access denied");
+    }
 
     if (req.user.role === "EMPLOYEE") {
       const self = await prisma.employee.findFirst({ where: { userId: req.user.id } });
@@ -142,6 +148,7 @@ export const deleteEmployee = async (req, res) => {
     const id = Number(req.params.id);
     const employee = await prisma.employee.findUnique({ where: { id } });
     if (!employee) return R.notFound(res, "Employee not found");
+    if (req.organisationId && employee.organisationId !== req.organisationId) return R.forbidden(res, "Access denied");
 
     await prisma.employee.update({
       where: { id },

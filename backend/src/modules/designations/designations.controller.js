@@ -6,7 +6,7 @@ export const getDesignations = async (req, res) => {
     const { page = 1, limit = 50, isActive, search } = req.query;
     const where = {};
     if (req.organisationId) where.organisationId = req.organisationId;
-    if (isActive !== undefined) where.isActive = isActive;
+    if (isActive !== undefined) where.isActive = isActive === "true" || isActive === true;
     if (search) where.name = { contains: search, mode: "insensitive" };
 
     const [designations, total] = await Promise.all([
@@ -33,6 +33,7 @@ export const getDesignationById = async (req, res) => {
       include: { _count: { select: { employees: true } } },
     });
     if (!desig) return R.notFound(res, "Designation not found");
+    if (req.organisationId && desig.organisationId !== req.organisationId) return R.forbidden(res, "Access denied");
     return R.success(res, desig);
   } catch (err) {
     return R.error(res, err.message);
@@ -50,8 +51,13 @@ export const createDesignation = async (req, res) => {
 
 export const updateDesignation = async (req, res) => {
   try {
+    const id = Number(req.params.id);
+    if (req.organisationId) {
+      const existing = await prisma.designation.findUnique({ where: { id }, select: { organisationId: true } });
+      if (!existing || existing.organisationId !== req.organisationId) return R.forbidden(res, "Access denied");
+    }
     const desig = await prisma.designation.update({
-      where: { id: Number(req.params.id) },
+      where: { id },
       data: req.body,
     });
     return R.success(res, desig, "Designation updated successfully");
@@ -63,6 +69,10 @@ export const updateDesignation = async (req, res) => {
 export const deleteDesignation = async (req, res) => {
   try {
     const id = Number(req.params.id);
+    if (req.organisationId) {
+      const existing = await prisma.designation.findUnique({ where: { id }, select: { organisationId: true } });
+      if (!existing || existing.organisationId !== req.organisationId) return R.forbidden(res, "Access denied");
+    }
     const empCount = await prisma.employee.count({ where: { designationId: id } });
     if (empCount > 0) return R.badRequest(res, `Cannot delete designation assigned to ${empCount} employees`);
 

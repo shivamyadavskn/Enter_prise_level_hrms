@@ -37,6 +37,10 @@ export const createHoliday = async (req, res) => {
 export const updateHoliday = async (req, res) => {
   try {
     const id = Number(req.params.id);
+    if (req.organisationId) {
+      const existing = await prisma.holiday.findUnique({ where: { id }, select: { organisationId: true } });
+      if (!existing || existing.organisationId !== req.organisationId) return R.forbidden(res, "Access denied");
+    }
     const { name, date, type } = req.body;
     const holiday = await prisma.holiday.update({
       where: { id },
@@ -55,6 +59,10 @@ export const updateHoliday = async (req, res) => {
 export const deleteHoliday = async (req, res) => {
   try {
     const id = Number(req.params.id);
+    if (req.organisationId) {
+      const existing = await prisma.holiday.findUnique({ where: { id }, select: { organisationId: true } });
+      if (!existing || existing.organisationId !== req.organisationId) return R.forbidden(res, "Access denied");
+    }
     await prisma.holiday.update({ where: { id }, data: { isActive: false } });
     return R.success(res, null, "Holiday deleted");
   } catch (err) {

@@ -80,7 +80,7 @@ export const applyWfh = async (req, res) => {
         });
       }
     } else {
-      const admins = await prisma.user.findMany({ where: { role: { in: ["ADMIN", "SUPER_ADMIN"] }, isActive: true } });
+      const admins = await prisma.user.findMany({ where: { role: { in: ["ADMIN", "SUPER_ADMIN"] }, isActive: true, ...(req.organisationId ? { organisationId: req.organisationId } : {}) } });
       for (const admin of admins) {
         await prisma.notification.create({
           data: { userId: admin.id, notificationType: "WFH_REQUEST", title: "New WFH Request", message: `${emp.firstName} ${emp.lastName} has requested to work from home (no manager assigned)` },
@@ -117,6 +117,7 @@ export const approveWfh = async (req, res) => {
 
     const wfh = await prisma.wfhRequest.findUnique({ where: { id }, include: { employee: { include: { user: true } } } });
     if (!wfh) return R.notFound(res, "WFH request not found");
+    if (req.organisationId && wfh.employee.organisationId !== req.organisationId) return R.forbidden(res, "Access denied");
     if (wfh.status !== "PENDING") return R.badRequest(res, "WFH request is not pending");
 
     const updated = await prisma.wfhRequest.update({
@@ -153,6 +154,7 @@ export const rejectWfh = async (req, res) => {
 
     const wfh = await prisma.wfhRequest.findUnique({ where: { id }, include: { employee: { include: { user: true } } } });
     if (!wfh) return R.notFound(res, "WFH request not found");
+    if (req.organisationId && wfh.employee.organisationId !== req.organisationId) return R.forbidden(res, "Access denied");
 
     const approver = await prisma.employee.findFirst({ where: { userId: req.user.id } });
 
@@ -185,8 +187,9 @@ export const rejectWfh = async (req, res) => {
 export const cancelWfh = async (req, res) => {
   try {
     const id = Number(req.params.id);
-    const wfh = await prisma.wfhRequest.findUnique({ where: { id } });
+    const wfh = await prisma.wfhRequest.findUnique({ where: { id }, include: { employee: { select: { organisationId: true } } } });
     if (!wfh) return R.notFound(res, "WFH request not found");
+    if (req.organisationId && wfh.employee.organisationId !== req.organisationId) return R.forbidden(res, "Access denied");
 
     if (req.user.role === "EMPLOYEE") {
       const emp = await prisma.employee.findFirst({ where: { userId: req.user.id } });

@@ -94,7 +94,7 @@ export default function WfhPage() {
                             <button onClick={() => setRejectModal(r.id)} className="rounded bg-red-50 p-1.5 text-red-600 hover:bg-red-100"><XMarkIcon className="h-4 w-4" /></button>
                           </>
                         )}
-                        {r.status === 'PENDING' && (
+                        {r.status === 'PENDING' && isOwnWfh(r) && (
                           <button onClick={() => cancelMut.mutate(r.id)} className="text-xs text-gray-400 hover:text-red-500">Cancel</button>
                         )}
                       </div>

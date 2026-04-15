@@ -12,6 +12,9 @@ export const uploadDocument = async (req, res) => {
     if (req.user.role === "EMPLOYEE") {
       const self = await prisma.employee.findFirst({ where: { userId: req.user.id } });
       if (!self || self.id !== Number(employeeId)) return R.forbidden(res, "Cannot upload documents for other employees");
+    } else if (req.organisationId) {
+      const target = await prisma.employee.findUnique({ where: { id: Number(employeeId) }, select: { organisationId: true } });
+      if (!target || target.organisationId !== req.organisationId) return R.forbidden(res, "Access denied");
     }
 
     const doc = await prisma.document.create({
@@ -41,6 +44,14 @@ export const getDocuments = async (req, res) => {
       where.employeeId = emp.id;
     } else {
       if (employeeId) where.employeeId = Number(employeeId);
+      if (req.organisationId) {
+        const orgEmpIds = (await prisma.employee.findMany({ where: { organisationId: req.organisationId }, select: { id: true } })).map(e => e.id);
+        if (where.employeeId) {
+          if (!orgEmpIds.includes(where.employeeId)) return R.paginated(res, [], 0, page, limit);
+        } else {
+          where.employeeId = { in: orgEmpIds };
+        }
+      }
     }
 
     if (documentType) where.documentType = documentType;
@@ -76,6 +87,9 @@ export const getDocumentById = async (req, res) => {
     if (req.user.role === "EMPLOYEE") {
       const emp = await prisma.employee.findFirst({ where: { userId: req.user.id } });
       if (!emp || emp.id !== doc.employeeId) return R.forbidden(res, "Access denied");
+    } else if (req.organisationId) {
+      const docEmp = await prisma.employee.findUnique({ where: { id: doc.employeeId }, select: { organisationId: true } });
+      if (!docEmp || docEmp.organisationId !== req.organisationId) return R.forbidden(res, "Access denied");
     }
 
     return R.success(res, doc);
@@ -92,6 +106,9 @@ export const downloadDocument = async (req, res) => {
     if (req.user.role === "EMPLOYEE") {
       const emp = await prisma.employee.findFirst({ where: { userId: req.user.id } });
       if (!emp || emp.id !== doc.employeeId) return R.forbidden(res, "Access denied");
+    } else if (req.organisationId) {
+      const docEmp = await prisma.employee.findUnique({ where: { id: doc.employeeId }, select: { organisationId: true } });
+      if (!docEmp || docEmp.organisationId !== req.organisationId) return R.forbidden(res, "Access denied");
     }
 
     if (!fs.existsSync(doc.filePath)) return R.notFound(res, "File not found on server");
@@ -106,6 +123,11 @@ export const deleteDocument = async (req, res) => {
   try {
     const doc = await prisma.document.findUnique({ where: { id: Number(req.params.id) } });
     if (!doc) return R.notFound(res, "Document not found");
+
+    if (req.organisationId) {
+      const docEmp = await prisma.employee.findUnique({ where: { id: doc.employeeId }, select: { organisationId: true } });
+      if (!docEmp || docEmp.organisationId !== req.organisationId) return R.forbidden(res, "Access denied");
+    }
 
     if (fs.existsSync(doc.filePath)) {
       fs.unlinkSync(doc.filePath);

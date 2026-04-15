@@ -13,26 +13,62 @@ import {
 import { useAuth } from '../../contexts/AuthContext.jsx'
 import clsx from 'clsx'
 
-const navigation = [
-  { name: 'Dashboard',     href: '/',             icon: HomeIcon,                   roles: ['ALL'] },
-  { name: 'Employees',     href: '/employees',    icon: UsersIcon,                  roles: ['SUPER_ADMIN','ADMIN','MANAGER'] },
-  { name: 'Departments',   href: '/departments',  icon: BuildingOfficeIcon,          roles: ['SUPER_ADMIN','ADMIN'] },
-  { name: 'Designations',  href: '/designations', icon: BriefcaseIcon,               roles: ['SUPER_ADMIN','ADMIN'] },
-  { name: 'Approvals',     href: '/approvals',    icon: CheckCircleIcon,             roles: ['SUPER_ADMIN','ADMIN','MANAGER'] },
-  { name: 'Leaves',        href: '/leaves',       icon: CalendarDaysIcon,            roles: ['ALL'] },
-  { name: 'Attendance',    href: '/attendance',   icon: ClockIcon,                  roles: ['ALL'] },
-  { name: 'Work From Home',href: '/wfh',          icon: ComputerDesktopIcon,         roles: ['ALL'] },
-  { name: 'Payroll',       href: '/payroll',      icon: BanknotesIcon,               roles: ['SUPER_ADMIN','ADMIN','FINANCE','EMPLOYEE'] },
-  { name: 'Performance',   href: '/performance',  icon: ChartBarIcon,                roles: ['ALL'] },
-  { name: 'Documents',     href: '/documents',    icon: DocumentTextIcon,            roles: ['ALL'] },
-  { name: 'HR Documents',  href: '/documents/generate', icon: DocumentDuplicateIcon,  roles: ['SUPER_ADMIN','ADMIN','FINANCE'] },
-  { name: 'Holidays',      href: '/holidays',     icon: SunIcon,                     roles: ['ALL'] },
-  { name: 'Reports',       href: '/reports',      icon: PresentationChartLineIcon,   roles: ['SUPER_ADMIN','ADMIN','MANAGER','FINANCE'] },
-  { name: 'Reimbursements',href: '/reimbursements',icon: CurrencyDollarIcon,          roles: ['ALL'] },
-  { name: 'Onboarding',    href: '/onboarding',   icon: ClipboardDocumentListIcon,   roles: ['ALL'] },
-  { name: 'Notifications', href: '/notifications',icon: BellIcon,                   roles: ['ALL'] },
-  { name: 'My Profile',    href: '/profile',      icon: UserCircleIcon,              roles: ['ALL'] },
-  { name: 'Organisation',  href: '/organisation', icon: Cog8ToothIcon,               roles: ['SUPER_ADMIN', 'ADMIN'] },
+const navSections = [
+  {
+    label: null,
+    items: [
+      { name: 'Dashboard', href: '/', icon: HomeIcon, roles: ['ALL'] },
+    ],
+  },
+  {
+    label: 'My Work',
+    items: [
+      { name: 'Attendance',     href: '/attendance',   icon: ClockIcon,           roles: ['ALL'] },
+      { name: 'Leaves',         href: '/leaves',       icon: CalendarDaysIcon,    roles: ['ALL'] },
+      { name: 'Work From Home', href: '/wfh',          icon: ComputerDesktopIcon, roles: ['ALL'] },
+      { name: 'Reimbursements', href: '/reimbursements',icon: CurrencyDollarIcon, roles: ['ALL'] },
+      { name: 'My Documents',   href: '/documents',    icon: DocumentTextIcon,    roles: ['ALL'] },
+      { name: 'Payslips',       href: '/payroll',      icon: BanknotesIcon,       roles: ['EMPLOYEE'] },
+    ],
+  },
+  {
+    label: 'Approvals',
+    items: [
+      { name: 'Approvals Inbox', href: '/approvals', icon: CheckCircleIcon, roles: ['SUPER_ADMIN','ADMIN','MANAGER'] },
+    ],
+  },
+  {
+    label: 'People',
+    items: [
+      { name: 'Employees',    href: '/employees',    icon: UsersIcon,          roles: ['SUPER_ADMIN','ADMIN','MANAGER'] },
+      { name: 'Departments',  href: '/departments',  icon: BuildingOfficeIcon, roles: ['SUPER_ADMIN','ADMIN'] },
+      { name: 'Designations', href: '/designations', icon: BriefcaseIcon,      roles: ['SUPER_ADMIN','ADMIN'] },
+      { name: 'Onboarding',   href: '/onboarding',   icon: ClipboardDocumentListIcon, roles: ['ALL'] },
+      { name: 'Performance',  href: '/performance',  icon: ChartBarIcon,       roles: ['ALL'] },
+    ],
+  },
+  {
+    label: 'Finance',
+    items: [
+      { name: 'Payroll',     href: '/payroll',    icon: BanknotesIcon, roles: ['SUPER_ADMIN','ADMIN','FINANCE'] },
+    ],
+  },
+  {
+    label: 'Organisation',
+    items: [
+      { name: 'Holidays',      href: '/holidays',           icon: SunIcon,                   roles: ['ALL'] },
+      { name: 'HR Documents',  href: '/documents/generate', icon: DocumentDuplicateIcon,      roles: ['SUPER_ADMIN','ADMIN','FINANCE'] },
+      { name: 'Reports',       href: '/reports',            icon: PresentationChartLineIcon,  roles: ['SUPER_ADMIN','ADMIN','MANAGER','FINANCE'] },
+      { name: 'Settings',      href: '/organisation',       icon: Cog8ToothIcon,              roles: ['SUPER_ADMIN','ADMIN'] },
+    ],
+  },
+  {
+    label: null,
+    items: [
+      { name: 'Notifications', href: '/notifications', icon: BellIcon,       roles: ['ALL'] },
+      { name: 'My Profile',    href: '/profile',       icon: UserCircleIcon, roles: ['ALL'] },
+    ],
+  },
 ]
 
 function NavItem({ item, onClick }) {
@@ -68,9 +104,14 @@ function NavItem({ item, onClick }) {
 function SidebarContent({ onClose }) {
   const { user, logout } = useAuth()
 
-  const visibleNav = navigation.filter(
-    (item) => item.roles.includes('ALL') || item.roles.includes(user?.role)
-  )
+  const visibleSections = navSections
+    .map((section) => ({
+      ...section,
+      items: section.items.filter(
+        (item) => item.roles.includes('ALL') || item.roles.includes(user?.role)
+      ),
+    }))
+    .filter((section) => section.items.length > 0)
 
   return (
     <div className="flex grow flex-col gap-y-5 overflow-y-auto border-r border-gray-200 bg-white px-6 pb-4">
@@ -82,14 +123,21 @@ function SidebarContent({ onClose }) {
       </div>
 
       <nav className="flex flex-1 flex-col">
-        <ul role="list" className="flex flex-1 flex-col gap-y-7">
-          <li>
-            <ul role="list" className="-mx-2 space-y-1">
-              {visibleNav.map((item) => (
-                <NavItem key={item.name} item={item} onClick={onClose} />
-              ))}
-            </ul>
-          </li>
+        <ul role="list" className="flex flex-1 flex-col gap-y-5">
+          {visibleSections.map((section, idx) => (
+            <li key={section.label || `section-${idx}`}>
+              {section.label && (
+                <p className="mb-1 px-2 text-xs font-semibold uppercase tracking-wider text-gray-400">
+                  {section.label}
+                </p>
+              )}
+              <ul role="list" className="-mx-2 space-y-1">
+                {section.items.map((item) => (
+                  <NavItem key={item.name} item={item} onClick={onClose} />
+                ))}
+              </ul>
+            </li>
+          ))}
 
           <li className="-mx-6 mt-auto">
             <button

@@ -162,20 +162,22 @@ export default function PayrollPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Payroll</h1>
-          <p className="text-sm text-gray-500">Manage salary and payslips</p>
+          <h1 className="text-2xl font-bold text-gray-900">{isFinanceOrAdmin ? 'Payroll Management' : 'My Payslips'}</h1>
+          <p className="text-sm text-gray-500">{isFinanceOrAdmin ? 'Process and manage organisation payroll' : 'View your salary payslips'}</p>
         </div>
         <div className="flex gap-3">
-          <select value={month} onChange={(e) => setMonth(Number(e.target.value))} className="rounded-md border-0 py-1.5 pl-3 pr-8 ring-1 ring-inset ring-gray-300 sm:text-sm">
-            {MONTHS.map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
-          </select>
-          <select value={year} onChange={(e) => setYear(Number(e.target.value))} className="rounded-md border-0 py-1.5 pl-3 pr-8 ring-1 ring-inset ring-gray-300 sm:text-sm">
-            {[2024, 2025, 2026].map((y) => <option key={y} value={y}>{y}</option>)}
-          </select>
           {isFinanceOrAdmin && (
-            <button onClick={() => setProcessModal(true)} className="rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white hover:bg-primary-500">
-              Process Payroll
-            </button>
+            <>
+              <select value={month} onChange={(e) => setMonth(Number(e.target.value))} className="rounded-md border-0 py-1.5 pl-3 pr-8 ring-1 ring-inset ring-gray-300 sm:text-sm">
+                {MONTHS.map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
+              </select>
+              <select value={year} onChange={(e) => setYear(Number(e.target.value))} className="rounded-md border-0 py-1.5 pl-3 pr-8 ring-1 ring-inset ring-gray-300 sm:text-sm">
+                {[2024, 2025, 2026].map((y) => <option key={y} value={y}>{y}</option>)}
+              </select>
+              <button onClick={() => setProcessModal(true)} className="rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white hover:bg-primary-500">
+                Process Payroll
+              </button>
+            </>
           )}
         </div>
       </div>
@@ -236,13 +238,13 @@ export default function PayrollPage() {
       {/* Payroll Table */}
       <div className="overflow-hidden rounded-lg bg-white shadow">
         {isLoading ? <PageLoader /> : payrolls.length === 0 ? (
-          <EmptyState variant="payroll" title="No payroll records" description="Process payroll for the selected month." />
+          <EmptyState variant="payroll" title="No payroll records" description={isFinanceOrAdmin ? "Process payroll for the selected month." : "Your payslips will appear here once payroll is processed."} />
         ) : (
           <>
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  {['Employee', 'Month/Year', 'Gross', 'Deductions', 'Net Pay', 'Status', 'Actions'].map((h) => (
+                  {(isFinanceOrAdmin ? ['Employee', 'Month/Year', 'Gross', 'Deductions', 'Net Pay', 'Status', 'Actions'] : ['Month/Year', 'Gross', 'Deductions', 'Net Pay', 'Status', 'Actions']).map((h) => (
                     <th key={h} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{h}</th>
                   ))}
                 </tr>
@@ -250,10 +252,12 @@ export default function PayrollPage() {
               <tbody className="divide-y divide-gray-200 bg-white">
                 {payrolls.map((p) => (
                   <tr key={p.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-3 text-sm font-medium text-gray-900">
-                      {p.employee?.firstName} {p.employee?.lastName}
-                      <p className="text-xs text-gray-500">{p.employee?.department?.name}</p>
-                    </td>
+                    {isFinanceOrAdmin && (
+                      <td className="px-6 py-3 text-sm font-medium text-gray-900">
+                        {p.employee?.firstName} {p.employee?.lastName}
+                        <p className="text-xs text-gray-500">{p.employee?.department?.name}</p>
+                      </td>
+                    )}
                     <td className="px-6 py-3 text-sm text-gray-500">{MONTHS[p.month - 1]} {p.year}</td>
                     <td className="px-6 py-3 text-sm text-gray-900">₹{p.grossSalary?.toFixed(2)}</td>
                     <td className="px-6 py-3 text-sm text-red-600">-₹{p.totalDeductions?.toFixed(2)}</td>

@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { documentsApi } from '../../api/index.js'
+import { documentsApi, employeesApi } from '../../api/index.js'
 import { useAuth } from '../../contexts/AuthContext.jsx'
 import Badge from '../../components/common/Badge.jsx'
 import Modal from '../../components/common/Modal.jsx'
@@ -22,11 +22,19 @@ export default function DocumentsPage() {
   const [form, setForm] = useState({ documentType: 'OTHER', documentName: '' })
   const [file, setFile] = useState(null)
   const [typeFilter, setTypeFilter] = useState('')
+  const [selectedEmpId, setSelectedEmpId] = useState('')
 
   const { data, isLoading } = useQuery({
     queryKey: ['documents', typeFilter],
     queryFn: () => documentsApi.getAll({ documentType: typeFilter || undefined }),
   })
+
+  const { data: empListData } = useQuery({
+    queryKey: ['emp-list-docs'],
+    queryFn: () => employeesApi.getAll({ limit: 200 }),
+    enabled: isAdmin(),
+  })
+  const allEmployees = empListData?.data?.data || []
 
   const empId = user?.employee?.id
 
@@ -43,9 +51,11 @@ export default function DocumentsPage() {
   const handleUpload = (e) => {
     e.preventDefault()
     if (!file) return toast.error('Please select a file')
+    const targetEmpId = isAdmin() && selectedEmpId ? selectedEmpId : empId
+    if (!targetEmpId) return toast.error('No employee selected')
     const fd = new FormData()
     fd.append('file', file)
-    fd.append('employeeId', empId)
+    fd.append('employeeId', targetEmpId)
     fd.append('documentType', form.documentType)
     fd.append('documentName', form.documentName || file.name)
     uploadMut.mutate(fd)
@@ -112,8 +122,17 @@ export default function DocumentsPage() {
       )}
 
       {/* Upload Modal */}
-      <Modal open={uploadModal} onClose={() => setUploadModal(false)} title="Upload Document" size="sm">
+      <Modal open={uploadModal} onClose={() => { setUploadModal(false); setSelectedEmpId('') }} title="Upload Document" size="sm">
         <form onSubmit={handleUpload} className="space-y-4">
+          {isAdmin() && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Upload For Employee *</label>
+              <select required value={selectedEmpId} onChange={(e) => setSelectedEmpId(e.target.value)} className="mt-1 block w-full rounded-md border-0 py-1.5 pl-3 pr-8 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-primary-600 sm:text-sm">
+                <option value="">Select employee</option>
+                {allEmployees.map((e) => <option key={e.id} value={e.id}>{e.firstName} {e.lastName} ({e.employeeCode})</option>)}
+              </select>
+            </div>
+          )}
           <div>
             <label className="block text-sm font-medium text-gray-700">Document Name</label>
             <input value={form.documentName} onChange={(e) => setForm({ ...form, documentName: e.target.value })} placeholder="Leave blank to use filename" className="mt-1 block w-full rounded-md border-0 py-1.5 px-3 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-primary-600 sm:text-sm" />

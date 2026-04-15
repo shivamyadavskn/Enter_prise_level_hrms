@@ -52,6 +52,22 @@ function AdminRoute({ children }) {
   return children
 }
 
+function ManagerRoute({ children }) {
+  const { user, loading } = useAuth()
+  if (loading) return null
+  if (!user) return <Navigate to="/login" replace />
+  if (!['SUPER_ADMIN', 'ADMIN', 'MANAGER'].includes(user.role)) return <Navigate to="/" replace />
+  return children
+}
+
+function FinanceRoute({ children }) {
+  const { user, loading } = useAuth()
+  if (loading) return null
+  if (!user) return <Navigate to="/login" replace />
+  if (!['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'FINANCE'].includes(user.role)) return <Navigate to="/" replace />
+  return children
+}
+
 function PublicRoute({ children }) {
   const { user, loading } = useAuth()
   if (loading) return null
@@ -67,10 +83,10 @@ function AppRoutes() {
       <Route path="/platform/setup" element={<PublicRoute><PlatformSetupPage /></PublicRoute>} />
       <Route path="/" element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
         <Route index element={<DashboardPage />} />
-        <Route path="employees" element={<EmployeesPage />} />
-        <Route path="employees/new" element={<EmployeeFormPage />} />
-        <Route path="employees/:id" element={<EmployeeDetailPage />} />
-        <Route path="departments" element={<DepartmentsPage />} />
+        <Route path="employees" element={<ManagerRoute><EmployeesPage /></ManagerRoute>} />
+        <Route path="employees/new" element={<AdminRoute><EmployeeFormPage /></AdminRoute>} />
+        <Route path="employees/:id" element={<ManagerRoute><EmployeeDetailPage /></ManagerRoute>} />
+        <Route path="departments" element={<AdminRoute><DepartmentsPage /></AdminRoute>} />
         <Route path="leaves" element={<LeavesPage />} />
         <Route path="attendance" element={<AttendancePage />} />
         <Route path="wfh" element={<WfhPage />} />
@@ -78,12 +94,12 @@ function AppRoutes() {
         <Route path="performance" element={<PerformancePage />} />
         <Route path="documents" element={<DocumentsPage />} />
         <Route path="notifications" element={<NotificationsPage />} />
-        <Route path="reports" element={<ReportsPage />} />
+        <Route path="reports" element={<FinanceRoute><ReportsPage /></FinanceRoute>} />
         <Route path="holidays" element={<HolidaysPage />} />
-        <Route path="documents/generate" element={<DocumentGeneratorPage />} />
-        <Route path="designations" element={<DesignationsPage />} />
+        <Route path="documents/generate" element={<AdminRoute><DocumentGeneratorPage /></AdminRoute>} />
+        <Route path="designations" element={<AdminRoute><DesignationsPage /></AdminRoute>} />
         <Route path="profile" element={<MyProfilePage />} />
-        <Route path="approvals" element={<ApprovalsPage />} />
+        <Route path="approvals" element={<ManagerRoute><ApprovalsPage /></ManagerRoute>} />
         <Route path="reimbursements" element={<ReimbursementsPage />} />
         <Route path="onboarding" element={<OnboardingPage />} />
         <Route path="organisation" element={<AdminRoute><OrganisationSettingsPage /></AdminRoute>} />

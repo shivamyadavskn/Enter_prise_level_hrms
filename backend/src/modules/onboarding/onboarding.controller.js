@@ -88,14 +88,17 @@ export const initChecklist = async (req, res) => {
       created++;
     }
 
-    await prisma.notification.create({
-      data: {
-        userId: (await prisma.employee.findUnique({ where: { id: employeeId }, include: { user: true } })).user.id,
-        notificationType: "ONBOARDING",
-        title: "Onboarding Checklist Ready",
-        message: `Your onboarding checklist has been assigned. Please complete ${created} task(s).`,
-      },
-    });
+    const targetEmp = await prisma.employee.findUnique({ where: { id: employeeId }, include: { user: true } });
+    if (targetEmp?.user) {
+      await prisma.notification.create({
+        data: {
+          userId: targetEmp.user.id,
+          notificationType: "ONBOARDING",
+          title: "Onboarding Checklist Ready",
+          message: `Your onboarding checklist has been assigned. Please complete ${created} task(s).`,
+        },
+      });
+    }
 
     return R.success(res, { created, skipped }, `Checklist initialized: ${created} tasks assigned`);
   } catch (err) {

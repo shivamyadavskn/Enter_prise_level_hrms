@@ -45,7 +45,12 @@ export const createLeaveType = async (req, res) => {
 
 export const updateLeaveType = async (req, res) => {
   try {
-    const lt = await prisma.leaveType.update({ where: { id: Number(req.params.id) }, data: req.body });
+    const id = Number(req.params.id);
+    if (req.organisationId) {
+      const existing = await prisma.leaveType.findUnique({ where: { id }, select: { organisationId: true } });
+      if (!existing || existing.organisationId !== req.organisationId) return R.forbidden(res, "Access denied");
+    }
+    const lt = await prisma.leaveType.update({ where: { id }, data: req.body });
     return R.success(res, lt, "Leave type updated");
   } catch (err) {
     return R.error(res, err.message);
@@ -252,7 +257,7 @@ export const applyLeave = async (req, res) => {
         if (manager.user.email) sendLeaveRequest({ email: manager.user.email, managerName: `${manager.firstName} ${manager.lastName}`, employeeName: `${emp.firstName} ${emp.lastName}`, leaveType: leaveType.name, startDate, endDate, totalDays, reason }).catch(() => {});
       }
     } else {
-      const admins = await prisma.user.findMany({ where: { role: { in: ["ADMIN", "SUPER_ADMIN"] }, isActive: true } });
+      const admins = await prisma.user.findMany({ where: { role: { in: ["ADMIN", "SUPER_ADMIN"] }, isActive: true, ...(req.organisationId ? { organisationId: req.organisationId } : {}) } });
       for (const admin of admins) {
         await notifyUser(admin.id, "LEAVE_REQUEST", "New Leave Request", `${emp.firstName} ${emp.lastName} applied for ${totalDays} day(s) leave (no manager assigned)`);
         if (admin.email) sendLeaveRequest({ email: admin.email, managerName: "HR Administrator", employeeName: `${emp.firstName} ${emp.lastName}`, leaveType: leaveType.name, startDate, endDate, totalDays, reason }).catch(() => {});
@@ -290,6 +295,7 @@ export const approveLeave = async (req, res) => {
 
     const leave = await prisma.leaveApplication.findUnique({ where: { id }, include: { employee: { include: { user: true } }, leaveType: true } });
     if (!leave) return R.notFound(res, "Leave not found");
+    if (req.organisationId && leave.employee.organisationId !== req.organisationId) return R.forbidden(res, "Access denied");
     if (leave.status !== "PENDING") return R.badRequest(res, "Leave is not in pending state");
 
     const updatedLeave = await prisma.leaveApplication.update({
@@ -331,6 +337,7 @@ export const rejectLeave = async (req, res) => {
 
     const leave = await prisma.leaveApplication.findUnique({ where: { id }, include: { employee: { include: { user: true } }, leaveType: true } });
     if (!leave) return R.notFound(res, "Leave not found");
+    if (req.organisationId && leave.employee.organisationId !== req.organisationId) return R.forbidden(res, "Access denied");
     if (leave.status !== "PENDING") return R.badRequest(res, "Leave is not in pending state");
 
     const approver = await prisma.employee.findFirst({ where: { userId: req.user.id } });
@@ -363,8 +370,9 @@ export const rejectLeave = async (req, res) => {
 export const cancelLeave = async (req, res) => {
   try {
     const id = Number(req.params.id);
-    const leave = await prisma.leaveApplication.findUnique({ where: { id } });
+    const leave = await prisma.leaveApplication.findUnique({ where: { id }, include: { employee: { select: { organisationId: true } } } });
     if (!leave) return R.notFound(res, "Leave not found");
+    if (req.organisationId && leave.employee.organisationId !== req.organisationId) return R.forbidden(res, "Access denied");
 
     if (req.user.role === "EMPLOYEE") {
       const emp = await prisma.employee.findFirst({ where: { userId: req.user.id } });

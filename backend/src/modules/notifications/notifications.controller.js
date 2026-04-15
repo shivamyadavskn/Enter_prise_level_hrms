@@ -6,7 +6,7 @@ export const getNotifications = async (req, res) => {
     const { page = 1, limit = 20, isRead, notificationType } = req.query;
     const where = { userId: req.user.id };
 
-    if (isRead !== undefined) where.isRead = isRead;
+    if (isRead !== undefined) where.isRead = isRead === "true" || isRead === true;
     if (notificationType) where.notificationType = notificationType;
 
     const [notifications, total, unreadCount] = await Promise.all([

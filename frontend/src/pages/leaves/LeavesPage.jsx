@@ -183,8 +183,8 @@ export default function LeavesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Leaves</h1>
-          <p className="text-sm text-gray-500">Manage leave applications</p>
+          <h1 className="text-2xl font-bold text-gray-900">{isAdmin() || isManager() ? 'Leave Management' : 'My Leaves'}</h1>
+          <p className="text-sm text-gray-500">{isAdmin() || isManager() ? 'Manage leave applications across the organisation' : 'Apply for leave and track your balances'}</p>
         </div>
         <div className="flex gap-2">
           {isAdmin() && (
@@ -293,7 +293,7 @@ export default function LeavesPage() {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  {['Employee', 'Leave Type', 'Duration', 'Days', 'Reason', 'Status', 'Actions'].map((h) => (
+                  {((isAdmin() || isManager()) ? ['Employee', 'Leave Type', 'Duration', 'Days', 'Reason', 'Status', 'Actions'] : ['Leave Type', 'Duration', 'Days', 'Reason', 'Status', 'Actions']).map((h) => (
                     <th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{h}</th>
                   ))}
                 </tr>
@@ -301,10 +301,12 @@ export default function LeavesPage() {
               <tbody className="divide-y divide-gray-200 bg-white">
                 {leaves.map((l) => (
                   <tr key={l.id} className={`hover:bg-gray-50 ${isOwnLeave(l) ? 'bg-blue-50/40' : ''}`}>
-                    <td className="px-4 py-3 text-sm font-medium text-gray-900">
-                      {l.employee?.firstName} {l.employee?.lastName}
-                      {isOwnLeave(l) && <span className="ml-2 inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">My Leave</span>}
-                    </td>
+                    {(isAdmin() || isManager()) && (
+                      <td className="px-4 py-3 text-sm font-medium text-gray-900">
+                        {l.employee?.firstName} {l.employee?.lastName}
+                        {isOwnLeave(l) && <span className="ml-2 inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">Mine</span>}
+                      </td>
+                    )}
                     <td className="px-4 py-3 text-sm text-gray-500">{l.leaveType?.name}</td>
                     <td className="px-4 py-3 text-sm text-gray-500">
                       {format(new Date(l.startDate), 'dd MMM')} – {format(new Date(l.endDate), 'dd MMM yyyy')}

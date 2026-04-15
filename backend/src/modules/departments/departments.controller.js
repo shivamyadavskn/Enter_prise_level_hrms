@@ -11,7 +11,7 @@ export const getDepartments = async (req, res) => {
     const { page = 1, limit = 50, isActive, search } = req.query;
     const where = {};
     if (req.organisationId) where.organisationId = req.organisationId;
-    if (isActive !== undefined) where.isActive = isActive;
+    if (isActive !== undefined) where.isActive = isActive === "true" || isActive === true;
     if (search) where.OR = [
       { name: { contains: search, mode: "insensitive" } },
       { code: { contains: search, mode: "insensitive" } },
@@ -41,6 +41,7 @@ export const getDepartmentById = async (req, res) => {
       },
     });
     if (!dept) return R.notFound(res, "Department not found");
+    if (req.organisationId && dept.organisationId !== req.organisationId) return R.forbidden(res, "Access denied");
     return R.success(res, dept);
   } catch (err) {
     return R.error(res, err.message);
@@ -62,6 +63,10 @@ export const createDepartment = async (req, res) => {
 export const updateDepartment = async (req, res) => {
   try {
     const id = Number(req.params.id);
+    if (req.organisationId) {
+      const existing = await prisma.department.findUnique({ where: { id }, select: { organisationId: true } });
+      if (!existing || existing.organisationId !== req.organisationId) return R.forbidden(res, "Access denied");
+    }
     const dept = await prisma.department.update({ where: { id }, data: req.body, include: deptInclude });
     return R.success(res, dept, "Department updated successfully");
   } catch (err) {
@@ -72,6 +77,10 @@ export const updateDepartment = async (req, res) => {
 export const deleteDepartment = async (req, res) => {
   try {
     const id = Number(req.params.id);
+    if (req.organisationId) {
+      const existing = await prisma.department.findUnique({ where: { id }, select: { organisationId: true } });
+      if (!existing || existing.organisationId !== req.organisationId) return R.forbidden(res, "Access denied");
+    }
     const empCount = await prisma.employee.count({ where: { departmentId: id, employmentStatus: { in: ["ACTIVE", "PROBATION"] } } });
     if (empCount > 0) return R.badRequest(res, `Cannot delete department with ${empCount} active employees`);
 
