@@ -11,8 +11,8 @@ router.use(authenticate);
 
 router.get("/", validateQuery(departmentQuerySchema), getDepartments);
 router.get("/:id", getDepartmentById);
-router.post("/", authorize("SUPER_ADMIN", "ADMIN"), validate(createDepartmentSchema), createDepartment);
-router.put("/:id", authorize("SUPER_ADMIN", "ADMIN"), validate(updateDepartmentSchema), updateDepartment);
-router.delete("/:id", authorize("SUPER_ADMIN", "ADMIN"), deleteDepartment);
+router.post("/", authorize("SUPER_ADMIN", "ADMIN", "HR"), validate(createDepartmentSchema), createDepartment);
+router.put("/:id", authorize("SUPER_ADMIN", "ADMIN", "HR"), validate(updateDepartmentSchema), updateDepartment);
+router.delete("/:id", authorize("SUPER_ADMIN", "ADMIN", "HR"), deleteDepartment);
 
 export default router;

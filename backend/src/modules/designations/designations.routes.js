@@ -11,8 +11,8 @@ router.use(authenticate);
 
 router.get("/", validateQuery(designationQuerySchema), getDesignations);
 router.get("/:id", getDesignationById);
-router.post("/", authorize("SUPER_ADMIN", "ADMIN"), validate(createDesignationSchema), createDesignation);
-router.put("/:id", authorize("SUPER_ADMIN", "ADMIN"), validate(updateDesignationSchema), updateDesignation);
-router.delete("/:id", authorize("SUPER_ADMIN", "ADMIN"), deleteDesignation);
+router.post("/", authorize("SUPER_ADMIN", "ADMIN", "HR"), validate(createDesignationSchema), createDesignation);
+router.put("/:id", authorize("SUPER_ADMIN", "ADMIN", "HR"), validate(updateDesignationSchema), updateDesignation);
+router.delete("/:id", authorize("SUPER_ADMIN", "ADMIN", "HR"), deleteDesignation);
 
 export default router;

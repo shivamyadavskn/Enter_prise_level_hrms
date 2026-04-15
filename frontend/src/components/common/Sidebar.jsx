@@ -8,7 +8,7 @@ import {
   DocumentTextIcon, BellIcon, PresentationChartLineIcon,
   FolderOpenIcon, SunIcon, DocumentDuplicateIcon,
   BriefcaseIcon, CheckCircleIcon, CurrencyDollarIcon, UserCircleIcon,
-  ClipboardDocumentListIcon, Cog8ToothIcon,
+  ClipboardDocumentListIcon, Cog8ToothIcon, ShieldCheckIcon,
 } from '@heroicons/react/24/outline'
 import { useAuth } from '../../contexts/AuthContext.jsx'
 import clsx from 'clsx'
@@ -23,50 +23,51 @@ const navSections = [
   {
     label: 'My Work',
     items: [
-      { name: 'Attendance',     href: '/attendance',   icon: ClockIcon,           roles: ['ALL'] },
-      { name: 'Leaves',         href: '/leaves',       icon: CalendarDaysIcon,    roles: ['ALL'] },
-      { name: 'Work From Home', href: '/wfh',          icon: ComputerDesktopIcon, roles: ['ALL'] },
-      { name: 'Reimbursements', href: '/reimbursements',icon: CurrencyDollarIcon, roles: ['ALL'] },
-      { name: 'My Documents',   href: '/documents',    icon: DocumentTextIcon,    roles: ['ALL'] },
-      { name: 'Payslips',       href: '/payroll',      icon: BanknotesIcon,       roles: ['EMPLOYEE'] },
+      { name: 'Attendance', href: '/attendance', icon: ClockIcon, roles: ['ALL'] },
+      { name: 'Leaves', href: '/leaves', icon: CalendarDaysIcon, roles: ['ALL'] },
+      { name: 'Work From Home', href: '/wfh', icon: ComputerDesktopIcon, roles: ['ALL'] },
+      { name: 'Reimbursements', href: '/reimbursements', icon: CurrencyDollarIcon, roles: ['ALL'] },
+      { name: 'My Documents', href: '/documents', icon: DocumentTextIcon, roles: ['ALL'] },
+      { name: 'Payslips', href: '/payroll', icon: BanknotesIcon, roles: ['EMPLOYEE'] },
     ],
   },
   {
     label: 'Approvals',
     items: [
-      { name: 'Approvals Inbox', href: '/approvals', icon: CheckCircleIcon, roles: ['SUPER_ADMIN','ADMIN','HR','MANAGER'] },
+      { name: 'Approvals Inbox', href: '/approvals', icon: CheckCircleIcon, roles: ['SUPER_ADMIN', 'ADMIN', 'HR', 'MANAGER'] },
     ],
   },
   {
     label: 'People',
     items: [
-      { name: 'Employees',    href: '/employees',    icon: UsersIcon,          roles: ['SUPER_ADMIN','ADMIN','HR','MANAGER'] },
-      { name: 'Departments',  href: '/departments',  icon: BuildingOfficeIcon, roles: ['SUPER_ADMIN','ADMIN','HR'] },
-      { name: 'Designations', href: '/designations', icon: BriefcaseIcon,      roles: ['SUPER_ADMIN','ADMIN','HR'] },
-      { name: 'Onboarding',   href: '/onboarding',   icon: ClipboardDocumentListIcon, roles: ['ALL'] },
-      { name: 'Performance',  href: '/performance',  icon: ChartBarIcon,       roles: ['ALL'] },
+      { name: 'Employees', href: '/employees', icon: UsersIcon, roles: ['SUPER_ADMIN', 'ADMIN', 'HR', 'MANAGER'] },
+      { name: 'Departments', href: '/departments', icon: BuildingOfficeIcon, roles: ['SUPER_ADMIN', 'ADMIN', 'HR'] },
+      { name: 'Designations', href: '/designations', icon: BriefcaseIcon, roles: ['SUPER_ADMIN', 'ADMIN', 'HR'] },
+      { name: 'Onboarding', href: '/onboarding', icon: ClipboardDocumentListIcon, roles: ['ALL'] },
+      { name: 'Performance', href: '/performance', icon: ChartBarIcon, roles: ['ALL'] },
     ],
   },
   {
     label: 'Finance',
     items: [
-      { name: 'Payroll',     href: '/payroll',    icon: BanknotesIcon, roles: ['SUPER_ADMIN','ADMIN','HR','FINANCE'] },
+      { name: 'Payroll', href: '/payroll', icon: BanknotesIcon, roles: ['SUPER_ADMIN', 'ADMIN', 'HR', 'FINANCE'] },
     ],
   },
   {
     label: 'Organisation',
     items: [
-      { name: 'Holidays',      href: '/holidays',           icon: SunIcon,                   roles: ['ALL'] },
-      { name: 'HR Documents',  href: '/documents/generate', icon: DocumentDuplicateIcon,      roles: ['SUPER_ADMIN','ADMIN','HR','FINANCE'] },
-      { name: 'Reports',       href: '/reports',            icon: PresentationChartLineIcon,  roles: ['SUPER_ADMIN','ADMIN','HR','MANAGER','FINANCE'] },
-      { name: 'Settings',      href: '/organisation',       icon: Cog8ToothIcon,              roles: ['SUPER_ADMIN','ADMIN'] },
+      { name: 'Holidays', href: '/holidays', icon: SunIcon, roles: ['ALL'] },
+      { name: 'HR Documents', href: '/documents/generate', icon: DocumentDuplicateIcon, roles: ['SUPER_ADMIN', 'ADMIN', 'HR', 'FINANCE'] },
+      { name: 'Reports', href: '/reports', icon: PresentationChartLineIcon, roles: ['SUPER_ADMIN', 'ADMIN', 'HR', 'MANAGER', 'FINANCE'] },
+      { name: 'Settings', href: '/organisation', icon: Cog8ToothIcon, roles: ['SUPER_ADMIN', 'ADMIN'] },
+      { name: 'Roles & Access', href: '/roles', icon: ShieldCheckIcon, roles: ['SUPER_ADMIN', 'ADMIN'] },
     ],
   },
   {
     label: null,
     items: [
-      { name: 'Notifications', href: '/notifications', icon: BellIcon,       roles: ['ALL'] },
-      { name: 'My Profile',    href: '/profile',       icon: UserCircleIcon, roles: ['ALL'] },
+      { name: 'Notifications', href: '/notifications', icon: BellIcon, roles: ['ALL'] },
+      { name: 'My Profile', href: '/profile', icon: UserCircleIcon, roles: ['ALL'] },
     ],
   },
 ]
@@ -185,7 +186,7 @@ export default function Sidebar({ open, onClose }) {
 
       {/* Desktop */}
       <div className="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-72 lg:flex-col">
-        <SidebarContent onClose={() => {}} />
+        <SidebarContent onClose={() => { }} />
       </div>
     </>
   )

@@ -27,6 +27,7 @@ import ReimbursementsPage from './pages/reimbursements/ReimbursementsPage.jsx'
 import OnboardingPage from './pages/onboarding/OnboardingPage.jsx'
 import RegisterPage from './pages/auth/RegisterPage.jsx'
 import OrganisationSettingsPage from './pages/organisation/OrganisationSettingsPage.jsx'
+import RolesPermissionsPage from './pages/permissions/RolesPermissionsPage.jsx'
 
 function ProtectedRoute({ children }) {
   const { user, loading, activeOrg } = useAuth()
@@ -48,7 +49,7 @@ function AdminRoute({ children }) {
   const { user, loading } = useAuth()
   if (loading) return null
   if (!user) return <Navigate to="/login" replace />
-  if (!['SUPER_ADMIN', 'ADMIN'].includes(user.role)) return <Navigate to="/" replace />
+  if (!['SUPER_ADMIN', 'ADMIN', 'HR'].includes(user.role)) return <Navigate to="/" replace />
   return children
 }
 
@@ -56,7 +57,7 @@ function ManagerRoute({ children }) {
   const { user, loading } = useAuth()
   if (loading) return null
   if (!user) return <Navigate to="/login" replace />
-  if (!['SUPER_ADMIN', 'ADMIN', 'MANAGER'].includes(user.role)) return <Navigate to="/" replace />
+  if (!['SUPER_ADMIN', 'ADMIN', 'HR', 'MANAGER'].includes(user.role)) return <Navigate to="/" replace />
   return children
 }
 
@@ -64,7 +65,7 @@ function FinanceRoute({ children }) {
   const { user, loading } = useAuth()
   if (loading) return null
   if (!user) return <Navigate to="/login" replace />
-  if (!['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'FINANCE'].includes(user.role)) return <Navigate to="/" replace />
+  if (!['SUPER_ADMIN', 'ADMIN', 'HR', 'MANAGER', 'FINANCE'].includes(user.role)) return <Navigate to="/" replace />
   return children
 }
 
@@ -103,6 +104,7 @@ function AppRoutes() {
         <Route path="reimbursements" element={<ReimbursementsPage />} />
         <Route path="onboarding" element={<OnboardingPage />} />
         <Route path="organisation" element={<AdminRoute><OrganisationSettingsPage /></AdminRoute>} />
+        <Route path="roles" element={<AdminRoute><RolesPermissionsPage /></AdminRoute>} />
       </Route>
       <Route path="/platform" element={<PlatformRoute><PlatformLayout /></PlatformRoute>}>
         <Route index element={<PlatformDashboardPage />} />

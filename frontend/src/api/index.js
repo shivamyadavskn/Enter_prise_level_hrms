@@ -194,3 +194,14 @@ export const reportsApi = {
   getAttrition: (params) => api.get('/reports/attrition', { params }),
   getNewJoiners: (params) => api.get('/reports/new-joiners', { params }),
 }
+
+// ── Permissions & Roles ───────────────────────────────────────────────────────
+export const permissionsApi = {
+  getAll: () => api.get('/permissions'),
+  getRolePermissions: (role) => api.get(`/permissions/roles/${role}`),
+  updateRolePermission: (data) => api.put('/permissions/roles', data),
+  bulkUpdateRolePermissions: (data) => api.put('/permissions/roles/bulk', data),
+  seedDefaults: () => api.post('/permissions/seed'),
+  getDefaults: () => api.get('/permissions/defaults'),
+  getRoleMatrix: () => api.get('/permissions/roles/matrix'),
+}

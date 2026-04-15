@@ -14,17 +14,17 @@ const router = Router();
 
 router.use(authenticate);
 
-router.post("/import/preview", authorize("SUPER_ADMIN", "ADMIN"), upload.single("file"), previewImport);
-router.post("/import/execute", authorize("SUPER_ADMIN", "ADMIN"), upload.single("file"), executeImport);
+router.post("/import/preview", authorize("SUPER_ADMIN", "ADMIN", "HR"), upload.single("file"), previewImport);
+router.post("/import/execute", authorize("SUPER_ADMIN", "ADMIN", "HR"), upload.single("file"), executeImport);
 
 router.get("/me", getMyProfile);
 router.get("/me/insights", getMyInsights);
-router.get("/team", authorize("MANAGER", "ADMIN", "SUPER_ADMIN"), getTeamMembers);
-router.get("/", authorize("SUPER_ADMIN", "ADMIN", "MANAGER"), validateQuery(employeeQuerySchema), getEmployees);
+router.get("/team", authorize("MANAGER", "ADMIN", "HR", "SUPER_ADMIN"), getTeamMembers);
+router.get("/", authorize("SUPER_ADMIN", "ADMIN", "HR", "MANAGER"), validateQuery(employeeQuerySchema), getEmployees);
 router.get("/:id", getEmployeeById);
-router.post("/", authorize("SUPER_ADMIN", "ADMIN"), validate(createEmployeeSchema), createEmployee);
+router.post("/", authorize("SUPER_ADMIN", "ADMIN", "HR"), validate(createEmployeeSchema), createEmployee);
 router.put("/:id", validate(updateEmployeeSchema), updateEmployee);
-router.delete("/:id", authorize("SUPER_ADMIN", "ADMIN"), deleteEmployee);
+router.delete("/:id", authorize("SUPER_ADMIN", "ADMIN", "HR"), deleteEmployee);
 
 router.get("/:id/experience", getExperiences);
 router.post("/:id/experience", addExperience);

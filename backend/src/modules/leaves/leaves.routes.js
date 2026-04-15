@@ -17,20 +17,20 @@ router.use(authenticate);
 
 // Leave Types
 router.get("/types", getLeaveTypes);
-router.post("/types", authorize("SUPER_ADMIN", "ADMIN"), validate(createLeaveTypeSchema), createLeaveType);
-router.put("/types/:id", authorize("SUPER_ADMIN", "ADMIN"), validate(updateLeaveTypeSchema), updateLeaveType);
+router.post("/types", authorize("SUPER_ADMIN", "ADMIN", "HR"), validate(createLeaveTypeSchema), createLeaveType);
+router.put("/types/:id", authorize("SUPER_ADMIN", "ADMIN", "HR"), validate(updateLeaveTypeSchema), updateLeaveType);
 
 // Leave Balance
 router.get("/balance", getLeaveBalance);
-router.post("/balance/adjust", authorize("SUPER_ADMIN", "ADMIN"), validate(adjustBalanceSchema), adjustLeaveBalance);
-router.post("/allocate-bulk", authorize("SUPER_ADMIN", "ADMIN"), bulkAllocateLeaves);
+router.post("/balance/adjust", authorize("SUPER_ADMIN", "ADMIN", "HR"), validate(adjustBalanceSchema), adjustLeaveBalance);
+router.post("/allocate-bulk", authorize("SUPER_ADMIN", "ADMIN", "HR"), bulkAllocateLeaves);
 
 // Leave Applications
 router.get("/", validateQuery(leaveQuerySchema), getLeaves);
 router.post("/apply", validate(applyLeaveSchema), applyLeave);
 router.get("/:id", getLeaveById);
-router.patch("/:id/approve", authorize("SUPER_ADMIN", "ADMIN", "MANAGER"), validate(approveRejectSchema), approveLeave);
-router.patch("/:id/reject", authorize("SUPER_ADMIN", "ADMIN", "MANAGER"), validate(approveRejectSchema), rejectLeave);
+router.patch("/:id/approve", authorize("SUPER_ADMIN", "ADMIN", "HR", "MANAGER"), validate(approveRejectSchema), approveLeave);
+router.patch("/:id/reject", authorize("SUPER_ADMIN", "ADMIN", "HR", "MANAGER"), validate(approveRejectSchema), rejectLeave);
 router.patch("/:id/cancel", cancelLeave);
 
 export default router;
