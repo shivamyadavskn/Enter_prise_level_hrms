@@ -176,7 +176,7 @@ export default function EmployeeFormPage() {
             <div>
               <label className="block text-sm font-medium text-gray-700">System Role *</label>
               <select required value={userForm.role} onChange={uf('role')} className="mt-1 block w-full rounded-md border-0 py-1.5 pl-3 pr-8 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-primary-600 sm:text-sm">
-                {['EMPLOYEE', 'MANAGER', 'ADMIN', 'FINANCE', 'SUPER_ADMIN'].map((r) => <option key={r} value={r}>{r.replace('_', ' ')}</option>)}
+                {['EMPLOYEE', 'HR', 'MANAGER', 'ADMIN', 'FINANCE', 'SUPER_ADMIN'].map((r) => <option key={r} value={r}>{r.replace('_', ' ')}</option>)}
               </select>
             </div>
             <div className="flex justify-end pt-2">

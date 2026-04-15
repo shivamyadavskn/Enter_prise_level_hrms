@@ -11,7 +11,7 @@ export const updateDepartmentSchema = createDepartmentSchema.partial();
 
 export const departmentQuerySchema = z.object({
   page: z.coerce.number().min(1).default(1),
-  limit: z.coerce.number().min(1).max(100).default(50),
+  limit: z.coerce.number().min(1).max(200).default(50),
   isActive: z.coerce.boolean().optional(),
   search: z.string().optional(),
 });

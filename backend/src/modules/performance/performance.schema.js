@@ -28,7 +28,7 @@ export const managerAppraisalSchema = z.object({
 
 export const performanceQuerySchema = z.object({
   page: z.coerce.number().min(1).default(1),
-  limit: z.coerce.number().min(1).max(100).default(10),
+  limit: z.coerce.number().min(1).max(200).default(10),
   employeeId: z.coerce.number().int().positive().optional(),
   reviewType: z.enum(["PROBATION", "QUARTERLY", "ANNUAL", "MID_YEAR"]).optional(),
   status: z.enum(["PENDING", "COMPLETED", "ACKNOWLEDGED"]).optional(),

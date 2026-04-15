@@ -59,8 +59,8 @@ export function AuthProvider({ children }) {
   const hasRole = (...roles) => roles.includes(user?.role)
 
   const isPlatformAdmin = () => user?.role === 'PLATFORM_ADMIN'
-  const isAdmin = () => hasRole('PLATFORM_ADMIN', 'SUPER_ADMIN', 'ADMIN')
-  const isManager = () => hasRole('PLATFORM_ADMIN', 'SUPER_ADMIN', 'ADMIN', 'MANAGER')
+  const isAdmin = () => hasRole('PLATFORM_ADMIN', 'SUPER_ADMIN', 'ADMIN', 'HR')
+  const isManager = () => hasRole('PLATFORM_ADMIN', 'SUPER_ADMIN', 'ADMIN', 'HR', 'MANAGER')
   const isFinance = () => hasRole('PLATFORM_ADMIN', 'SUPER_ADMIN', 'ADMIN', 'FINANCE')
 
   return (

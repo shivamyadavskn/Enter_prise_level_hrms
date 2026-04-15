@@ -22,7 +22,7 @@ export const approveRegularizationSchema = z.object({
 
 export const attendanceQuerySchema = z.object({
   page: z.coerce.number().min(1).default(1),
-  limit: z.coerce.number().min(1).max(100).default(31),
+  limit: z.coerce.number().min(1).max(200).default(31),
   employeeId: z.coerce.number().int().positive().optional(),
   startDate: z.string().optional(),
   endDate: z.string().optional(),

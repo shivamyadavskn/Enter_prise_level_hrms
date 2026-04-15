@@ -1,6 +1,7 @@
 import prisma from "../../config/prisma.js";
 import * as R from "../../utils/response.js";
 import { sendReimbursementApproved, sendReimbursementRejected } from "../../services/email.service.js";
+import { logAudit } from "../../services/audit.service.js";
 
 const empInclude = { select: { id: true, firstName: true, lastName: true, employeeCode: true, designation: { select: { name: true } }, department: { select: { name: true } } } };
 
@@ -106,6 +107,69 @@ export const rejectClaim = async (req, res) => {
     }
 
     return R.success(res, claim, "Claim rejected");
+  } catch (err) {
+    return R.error(res, err.message);
+  }
+};
+
+export const uploadReceipt = async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    if (!req.file) return R.badRequest(res, "No file uploaded");
+
+    const claim = await prisma.reimbursementClaim.update({
+      where: { id },
+      data: { receiptPath: req.file.path.replace(/\\/g, "/") },
+    });
+
+    return R.success(res, claim, "Receipt uploaded");
+  } catch (err) {
+    return R.error(res, err.message);
+  }
+};
+
+export const getReimbursementReport = async (req, res) => {
+  try {
+    const { month, year, status } = req.query;
+    const m = Number(month) || new Date().getMonth() + 1;
+    const y = Number(year) || new Date().getFullYear();
+
+    const start = new Date(y, m - 1, 1);
+    const end = new Date(y, m, 0, 23, 59, 59);
+
+    const where = { claimDate: { gte: start, lte: end } };
+    if (status) where.status = status;
+
+    const claims = await prisma.reimbursementClaim.findMany({
+      where,
+      include: { employee: { select: { firstName: true, lastName: true, employeeCode: true, department: { select: { name: true } } } } },
+      orderBy: { claimDate: "desc" },
+    });
+
+    const summary = {
+      totalClaims: claims.length,
+      totalAmount: claims.reduce((s, c) => s + c.totalAmount, 0),
+      approved: claims.filter(c => c.status === "APPROVED").length,
+      approvedAmount: claims.filter(c => c.status === "APPROVED").reduce((s, c) => s + c.totalAmount, 0),
+      pending: claims.filter(c => c.status === "PENDING").length,
+      pendingAmount: claims.filter(c => c.status === "PENDING").reduce((s, c) => s + c.totalAmount, 0),
+      rejected: claims.filter(c => c.status === "REJECTED").length,
+      rejectedAmount: claims.filter(c => c.status === "REJECTED").reduce((s, c) => s + c.totalAmount, 0),
+    };
+
+    // Category breakdown
+    const byCategory = {};
+    for (const claim of claims) {
+      const items = Array.isArray(claim.items) ? claim.items : [];
+      for (const item of items) {
+        const cat = item.category || "Other";
+        if (!byCategory[cat]) byCategory[cat] = { count: 0, amount: 0 };
+        byCategory[cat].count++;
+        byCategory[cat].amount += Number(item.amount || 0);
+      }
+    }
+
+    return R.success(res, { month: m, year: y, summary, byCategory, claims });
   } catch (err) {
     return R.error(res, err.message);
   }

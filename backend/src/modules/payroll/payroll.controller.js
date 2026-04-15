@@ -306,3 +306,175 @@ export const getPayrollSummary = async (req, res) => {
     return R.error(res, err.message);
   }
 };
+
+// ── Payroll Adjustments (Bonus, Deduction, Advance, Overtime) ─────────────────
+
+export const addPayrollAdjustment = async (req, res) => {
+  try {
+    const { employeeId, month, year, type, amount, description } = req.body;
+
+    if (!employeeId || !month || !year || !type || !amount) {
+      return R.badRequest(res, "employeeId, month, year, type, and amount are required");
+    }
+
+    const payroll = await prisma.payroll.findUnique({
+      where: { employeeId_month_year: { employeeId: Number(employeeId), month: Number(month), year: Number(year) } },
+    });
+    if (!payroll) return R.notFound(res, "Payroll record not found. Process payroll first.");
+
+    const adjustment = await prisma.payrollAdjustment.create({
+      data: {
+        payrollId: payroll.id,
+        type,
+        amount: Number(amount),
+        description: description || null,
+        approvedBy: req.user.id,
+      },
+    });
+
+    // Recalculate net salary
+    const allAdj = await prisma.payrollAdjustment.findMany({ where: { payrollId: payroll.id } });
+    const bonuses = allAdj.filter(a => ["BONUS", "OVERTIME", "INCENTIVE", "REIMBURSEMENT_PAYOUT"].includes(a.type)).reduce((s, a) => s + a.amount, 0);
+    const deductions = allAdj.filter(a => ["DEDUCTION", "ADVANCE"].includes(a.type)).reduce((s, a) => s + a.amount, 0);
+
+    const updatedPayroll = await prisma.payroll.update({
+      where: { id: payroll.id },
+      data: { netSalary: payroll.grossSalary - payroll.totalDeductions + bonuses - deductions },
+    });
+
+    return R.created(res, { adjustment, updatedNetSalary: updatedPayroll.netSalary }, "Adjustment added");
+  } catch (err) { return R.error(res, err.message); }
+};
+
+export const getPayrollAdjustments = async (req, res) => {
+  try {
+    const { employeeId, month, year } = req.query;
+    if (!employeeId || !month || !year) return R.badRequest(res, "employeeId, month, year are required");
+
+    const payroll = await prisma.payroll.findUnique({
+      where: { employeeId_month_year: { employeeId: Number(employeeId), month: Number(month), year: Number(year) } },
+      include: { adjustments: { orderBy: { createdAt: "desc" } } },
+    });
+    if (!payroll) return R.notFound(res, "Payroll record not found");
+
+    return R.success(res, payroll.adjustments);
+  } catch (err) { return R.error(res, err.message); }
+};
+
+// ── Bulk Payment Status Update ────────────────────────────────────────────────
+
+export const bulkUpdatePaymentStatus = async (req, res) => {
+  try {
+    const { payrollIds, paymentStatus, paymentDate } = req.body;
+    if (!payrollIds?.length || !paymentStatus) {
+      return R.badRequest(res, "payrollIds and paymentStatus are required");
+    }
+
+    const updated = await prisma.payroll.updateMany({
+      where: { id: { in: payrollIds } },
+      data: { paymentStatus, paymentDate: paymentDate ? new Date(paymentDate) : undefined },
+    });
+
+    // Notify employees if marked as PAID
+    if (paymentStatus === "PAID") {
+      const payrolls = await prisma.payroll.findMany({
+        where: { id: { in: payrollIds } },
+        include: { employee: { include: { user: true } } },
+      });
+
+      await Promise.all(payrolls.map(p => {
+        if (p.employee?.user) {
+          return prisma.notification.create({
+            data: {
+              userId: p.employee.user.id,
+              notificationType: "PAYSLIP",
+              title: "Salary Credited",
+              message: `Your salary for ${p.month}/${p.year} has been credited. Net Pay: ₹${p.netSalary.toFixed(2)}`,
+            },
+          });
+        }
+      }));
+    }
+
+    return R.success(res, { updated: updated.count }, `${updated.count} payrolls updated to ${paymentStatus}`);
+  } catch (err) { return R.error(res, err.message); }
+};
+
+// ── Payroll Cost Forecast ─────────────────────────────────────────────────────
+
+export const getPayrollForecast = async (req, res) => {
+  try {
+    const orgId = req.organisationId;
+    const empWhere = {
+      employmentStatus: { in: ["ACTIVE", "PROBATION"] },
+      ...(orgId ? { organisationId: orgId } : {}),
+    };
+
+    // Current salary structures
+    const employees = await prisma.employee.findMany({
+      where: empWhere,
+      include: {
+        salaryStructures: { where: { isActive: true }, take: 1 },
+        department: { select: { name: true } },
+      },
+    });
+
+    let totalGross = 0, totalNet = 0, totalCTC = 0, totalDeductions = 0;
+    const byDepartment = {};
+
+    employees.forEach(emp => {
+      const sal = emp.salaryStructures[0];
+      if (!sal) return;
+
+      totalGross += sal.grossSalary;
+      totalNet += sal.netSalary;
+      totalCTC += sal.ctc;
+      totalDeductions += sal.totalDeductions;
+
+      const dept = emp.department?.name || "Unassigned";
+      if (!byDepartment[dept]) byDepartment[dept] = { gross: 0, net: 0, ctc: 0, employees: 0 };
+      byDepartment[dept].gross += sal.grossSalary;
+      byDepartment[dept].net += sal.netSalary;
+      byDepartment[dept].ctc += sal.ctc;
+      byDepartment[dept].employees++;
+    });
+
+    // Historical trend (last 6 months)
+    const now = new Date();
+    const historicalMonths = [];
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const m = d.getMonth() + 1, y = d.getFullYear();
+      const payrolls = await prisma.payroll.findMany({
+        where: { month: m, year: y, ...(orgId ? { employee: { organisationId: orgId } } : {}) },
+      });
+      historicalMonths.push({
+        month: m, year: y,
+        totalGross: payrolls.reduce((s, p) => s + p.grossSalary, 0),
+        totalNet: payrolls.reduce((s, p) => s + p.netSalary, 0),
+        employees: payrolls.length,
+      });
+    }
+
+    // Simple forecast: if current structures are maintained next month
+    const nextMonth = now.getMonth() + 2 > 12 ? 1 : now.getMonth() + 2;
+    const nextYear = nextMonth === 1 ? now.getFullYear() + 1 : now.getFullYear();
+
+    return R.success(res, {
+      forecast: {
+        month: nextMonth,
+        year: nextYear,
+        projectedGross: totalGross,
+        projectedNet: totalNet,
+        projectedCTC: totalCTC,
+        projectedDeductions: totalDeductions,
+        employeesWithSalary: employees.filter(e => e.salaryStructures.length > 0).length,
+        employeesWithoutSalary: employees.filter(e => e.salaryStructures.length === 0).length,
+      },
+      departmentBreakdown: Object.entries(byDepartment).map(([dept, data]) => ({
+        department: dept, ...data,
+      })),
+      historicalTrend: historicalMonths,
+    });
+  } catch (err) { return R.error(res, err.message); }
+};

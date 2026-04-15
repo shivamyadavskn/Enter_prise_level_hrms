@@ -25,6 +25,11 @@ import reimbursementRoutes from "./modules/reimbursements/reimbursements.routes.
 import onboardingRoutes from "./modules/onboarding/onboarding.routes.js";
 import organisationRoutes from "./modules/organisation/organisation.routes.js";
 import platformRoutes from "./modules/platform/platform.routes.js";
+import permissionRoutes from "./modules/permissions/permissions.routes.js";
+import announcementRoutes from "./modules/announcements/announcements.routes.js";
+import assetRoutes from "./modules/assets/assets.routes.js";
+import auditRoutes from "./modules/audit/audit.routes.js";
+import pulseRoutes from "./modules/pulse/pulse.routes.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -32,7 +37,7 @@ const __dirname = path.dirname(__filename);
 const app = express();
 
 // ── Ensure upload directories exist ──────────────────────────────────────────
-["uploads/documents", "logs"].forEach((dir) => {
+["uploads/documents", "uploads/receipts", "logs"].forEach((dir) => {
   const fullPath = path.join(process.cwd(), dir);
   if (!fs.existsSync(fullPath)) fs.mkdirSync(fullPath, { recursive: true });
 });
@@ -93,6 +98,11 @@ app.use("/api/reimbursements", reimbursementRoutes);
 app.use("/api/onboarding", onboardingRoutes);
 app.use("/api/organisation", organisationRoutes);
 app.use("/api/platform", platformRoutes);
+app.use("/api/permissions", permissionRoutes);
+app.use("/api/announcements", announcementRoutes);
+app.use("/api/assets", assetRoutes);
+app.use("/api/audit-logs", auditRoutes);
+app.use("/api/pulse", pulseRoutes);
 
 // ── 404 Handler ───────────────────────────────────────────────────────────────
 app.use((req, res) => {

@@ -34,15 +34,15 @@ const navSections = [
   {
     label: 'Approvals',
     items: [
-      { name: 'Approvals Inbox', href: '/approvals', icon: CheckCircleIcon, roles: ['SUPER_ADMIN','ADMIN','MANAGER'] },
+      { name: 'Approvals Inbox', href: '/approvals', icon: CheckCircleIcon, roles: ['SUPER_ADMIN','ADMIN','HR','MANAGER'] },
     ],
   },
   {
     label: 'People',
     items: [
-      { name: 'Employees',    href: '/employees',    icon: UsersIcon,          roles: ['SUPER_ADMIN','ADMIN','MANAGER'] },
-      { name: 'Departments',  href: '/departments',  icon: BuildingOfficeIcon, roles: ['SUPER_ADMIN','ADMIN'] },
-      { name: 'Designations', href: '/designations', icon: BriefcaseIcon,      roles: ['SUPER_ADMIN','ADMIN'] },
+      { name: 'Employees',    href: '/employees',    icon: UsersIcon,          roles: ['SUPER_ADMIN','ADMIN','HR','MANAGER'] },
+      { name: 'Departments',  href: '/departments',  icon: BuildingOfficeIcon, roles: ['SUPER_ADMIN','ADMIN','HR'] },
+      { name: 'Designations', href: '/designations', icon: BriefcaseIcon,      roles: ['SUPER_ADMIN','ADMIN','HR'] },
       { name: 'Onboarding',   href: '/onboarding',   icon: ClipboardDocumentListIcon, roles: ['ALL'] },
       { name: 'Performance',  href: '/performance',  icon: ChartBarIcon,       roles: ['ALL'] },
     ],
@@ -50,15 +50,15 @@ const navSections = [
   {
     label: 'Finance',
     items: [
-      { name: 'Payroll',     href: '/payroll',    icon: BanknotesIcon, roles: ['SUPER_ADMIN','ADMIN','FINANCE'] },
+      { name: 'Payroll',     href: '/payroll',    icon: BanknotesIcon, roles: ['SUPER_ADMIN','ADMIN','HR','FINANCE'] },
     ],
   },
   {
     label: 'Organisation',
     items: [
       { name: 'Holidays',      href: '/holidays',           icon: SunIcon,                   roles: ['ALL'] },
-      { name: 'HR Documents',  href: '/documents/generate', icon: DocumentDuplicateIcon,      roles: ['SUPER_ADMIN','ADMIN','FINANCE'] },
-      { name: 'Reports',       href: '/reports',            icon: PresentationChartLineIcon,  roles: ['SUPER_ADMIN','ADMIN','MANAGER','FINANCE'] },
+      { name: 'HR Documents',  href: '/documents/generate', icon: DocumentDuplicateIcon,      roles: ['SUPER_ADMIN','ADMIN','HR','FINANCE'] },
+      { name: 'Reports',       href: '/reports',            icon: PresentationChartLineIcon,  roles: ['SUPER_ADMIN','ADMIN','HR','MANAGER','FINANCE'] },
       { name: 'Settings',      href: '/organisation',       icon: Cog8ToothIcon,              roles: ['SUPER_ADMIN','ADMIN'] },
     ],
   },

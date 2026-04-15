@@ -9,7 +9,7 @@ export const createNotificationSchema = z.object({
 
 export const notificationQuerySchema = z.object({
   page: z.coerce.number().min(1).default(1),
-  limit: z.coerce.number().min(1).max(100).default(20),
+  limit: z.coerce.number().min(1).max(200).default(20),
   isRead: z.coerce.boolean().optional(),
   notificationType: z.string().optional(),
 });

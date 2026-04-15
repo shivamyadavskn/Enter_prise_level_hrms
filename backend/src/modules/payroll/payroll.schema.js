@@ -27,7 +27,7 @@ export const updatePaymentStatusSchema = z.object({
 
 export const payrollQuerySchema = z.object({
   page: z.coerce.number().min(1).default(1),
-  limit: z.coerce.number().min(1).max(100).default(10),
+  limit: z.coerce.number().min(1).max(200).default(10),
   month: z.coerce.number().min(1).max(12).optional(),
   year: z.coerce.number().min(2020).optional(),
   employeeId: z.coerce.number().int().positive().optional(),

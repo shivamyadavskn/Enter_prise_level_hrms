@@ -3,6 +3,7 @@ import {
   getSalaryStructure, upsertSalaryStructure, getMissingSalaryStructures,
   processPayroll, getPayrolls, getPayrollById, getMyPayslips,
   updatePaymentStatus, getPayrollSummary,
+  addPayrollAdjustment, getPayrollAdjustments, bulkUpdatePaymentStatus, getPayrollForecast,
 } from "./payroll.controller.js";
 import { authenticate } from "../../middlewares/auth.middleware.js";
 import { authorize } from "../../middlewares/rbac.middleware.js";
@@ -23,5 +24,11 @@ router.post("/process", authorize("SUPER_ADMIN", "ADMIN", "FINANCE"), validate(p
 router.get("/", authorize("SUPER_ADMIN", "ADMIN", "FINANCE", "EMPLOYEE"), validateQuery(payrollQuerySchema), getPayrolls);
 router.get("/:id", getPayrollById);
 router.patch("/:id/payment-status", authorize("SUPER_ADMIN", "ADMIN", "FINANCE"), validate(updatePaymentStatusSchema), updatePaymentStatus);
+
+// Adjustments & Bulk
+router.post("/adjustments", authorize("SUPER_ADMIN", "ADMIN", "FINANCE"), addPayrollAdjustment);
+router.get("/adjustments", authorize("SUPER_ADMIN", "ADMIN", "FINANCE"), getPayrollAdjustments);
+router.patch("/bulk-payment", authorize("SUPER_ADMIN", "ADMIN", "FINANCE"), bulkUpdatePaymentStatus);
+router.get("/forecast", authorize("SUPER_ADMIN", "ADMIN", "FINANCE"), getPayrollForecast);
 
 export default router;

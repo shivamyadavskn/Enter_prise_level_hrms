@@ -13,6 +13,7 @@ enum UserRole {
   PLATFORM_ADMIN
   SUPER_ADMIN
   ADMIN
+  HR
   MANAGER
   EMPLOYEE
   FINANCE
@@ -96,32 +97,32 @@ enum HolidayType {
 // ─── Models ───────────────────────────────────────────────────────────────────
 
 model Organisation {
-  id             Int       @id @default(autoincrement())
-  name           String
-  slug           String    @unique
-  industry       String?
-  size           String?
-  address        String?
-  city           String?
-  state          String?
-  country        String    @default("India")
-  phone          String?
-  email          String?
-  website        String?
-  logoUrl        String?
-  financialYearStart Int   @default(4)
-  pfEnabled      Boolean   @default(true)
-  esicEnabled    Boolean   @default(false)
-  isActive       Boolean   @default(true)
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  id                 Int      @id @default(autoincrement())
+  name               String
+  slug               String   @unique
+  industry           String?
+  size               String?
+  address            String?
+  city               String?
+  state              String?
+  country            String   @default("India")
+  phone              String?
+  email              String?
+  website            String?
+  logoUrl            String?
+  financialYearStart Int      @default(4)
+  pfEnabled          Boolean  @default(true)
+  esicEnabled        Boolean  @default(false)
+  isActive           Boolean  @default(true)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
-  users          User[]
-  employees      Employee[]
-  departments    Department[]
-  designations   Designation[]
-  leaveTypes     LeaveType[]
-  holidays       Holiday[]
+  users           User[]
+  employees       Employee[]
+  departments     Department[]
+  designations    Designation[]
+  leaveTypes      LeaveType[]
+  holidays        Holiday[]
   onboardingTasks OnboardingTask[]
 
   @@map("organisations")
@@ -144,6 +145,7 @@ model User {
   notifications Notification[]
   uploadedDocs  Document[]     @relation("UploadedBy")
   refreshTokens RefreshToken[]
+  auditLogs     AuditLog[]
 
   @@map("users")
 }
@@ -195,32 +197,37 @@ model Employee {
   updatedAt             DateTime         @updatedAt
 
   organisation      Organisation? @relation(fields: [organisationId], references: [id])
-  user              User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  department        Department?  @relation("EmpDept", fields: [departmentId], references: [id])
-  designation       Designation? @relation(fields: [designationId], references: [id])
-  manager           Employee?    @relation("ManagerSubordinates", fields: [managerId], references: [id])
-  subordinates      Employee[]   @relation("ManagerSubordinates")
-  headOfDepartments Department[] @relation("DeptHead")
+  user              User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  department        Department?   @relation("EmpDept", fields: [departmentId], references: [id])
+  designation       Designation?  @relation(fields: [designationId], references: [id])
+  manager           Employee?     @relation("ManagerSubordinates", fields: [managerId], references: [id])
+  subordinates      Employee[]    @relation("ManagerSubordinates")
+  headOfDepartments Department[]  @relation("DeptHead")
 
   leaveBalances           LeaveBalance[]
   leaveApplications       LeaveApplication[]
-  leaveWorkflowApprovals  LeaveApprovalWorkflow[] @relation("WorkflowApprover")
-  leaveFinalApprovals     LeaveApplication[]      @relation("LeaveApprover")
+  leaveWorkflowApprovals  LeaveApprovalWorkflow[]    @relation("WorkflowApprover")
+  leaveFinalApprovals     LeaveApplication[]         @relation("LeaveApprover")
   attendanceRecords       Attendance[]
   regularizationRequests  AttendanceRegularization[]
   regularizationApprovals AttendanceRegularization[] @relation("RegApprover")
   wfhRequests             WfhRequest[]
-  wfhApprovals            WfhRequest[]            @relation("WfhApprover")
+  wfhApprovals            WfhRequest[]               @relation("WfhApprover")
   salaryStructures        SalaryStructure[]
   payrolls                Payroll[]
-  reviewsAsEmployee       PerformanceReview[]     @relation("ReviewEmployee")
-  reviewsAsReviewer       PerformanceReview[]     @relation("ReviewReviewer")
+  reviewsAsEmployee       PerformanceReview[]        @relation("ReviewEmployee")
+  reviewsAsReviewer       PerformanceReview[]        @relation("ReviewReviewer")
   documents               Document[]
   reimbursementClaims     ReimbursementClaim[]
-  reimbursementApprovals  ReimbursementClaim[] @relation("ReimbursementApprover")
+  reimbursementApprovals  ReimbursementClaim[]       @relation("ReimbursementApprover")
   experiences             EmployeeExperience[]
   educations              EmployeeEducation[]
   onboardingItems         EmployeeOnboarding[]
+  assignedAssets          Asset[]
+  announcements           Announcement[]
+  travelClaims            TravelClaim[]
+  travelApprovals         TravelClaim[]              @relation("TravelApprover")
+  pulseResponses          PulseSurveyResponse[]
 
   @@unique([organisationId, employeeCode])
   @@map("employees")
@@ -230,14 +237,14 @@ model OnboardingTask {
   id             Int      @id @default(autoincrement())
   organisationId Int?
   title          String
-  description String?
-  category    String   @default("General")
-  isRequired  Boolean  @default(true)
-  order       Int      @default(0)
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
+  description    String?
+  category       String   @default("General")
+  isRequired     Boolean  @default(true)
+  order          Int      @default(0)
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
 
-  organisation  Organisation?       @relation(fields: [organisationId], references: [id])
+  organisation  Organisation?        @relation(fields: [organisationId], references: [id])
   employeeItems EmployeeOnboarding[]
 
   @@map("onboarding_tasks")
@@ -253,28 +260,28 @@ model EmployeeOnboarding {
   completedBy Int?
   createdAt   DateTime  @default(now())
 
-  employee Employee        @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-  task     OnboardingTask  @relation(fields: [taskId], references: [id])
+  employee Employee       @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  task     OnboardingTask @relation(fields: [taskId], references: [id])
 
   @@unique([employeeId, taskId])
   @@map("employee_onboarding")
 }
 
 model EmployeeExperience {
-  id              Int       @id @default(autoincrement())
-  employeeId      Int
-  companyName     String
-  jobTitle        String
-  department      String?
-  location        String?
-  employmentType  String?   // Full-time, Part-time, Contract
-  startDate       DateTime
-  endDate         DateTime?
-  isCurrent       Boolean   @default(false)
-  ctc             Float?
+  id               Int       @id @default(autoincrement())
+  employeeId       Int
+  companyName      String
+  jobTitle         String
+  department       String?
+  location         String?
+  employmentType   String? // Full-time, Part-time, Contract
+  startDate        DateTime
+  endDate          DateTime?
+  isCurrent        Boolean   @default(false)
+  ctc              Float?
   responsibilities String?
   reasonForLeaving String?
-  createdAt       DateTime  @default(now())
+  createdAt        DateTime  @default(now())
 
   employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 
@@ -282,16 +289,16 @@ model EmployeeExperience {
 }
 
 model EmployeeEducation {
-  id           Int       @id @default(autoincrement())
+  id           Int      @id @default(autoincrement())
   employeeId   Int
-  degree       String    // B.Tech, MBA, 12th, etc.
+  degree       String // B.Tech, MBA, 12th, etc.
   fieldOfStudy String?
   institution  String
-  board        String?   // University / Board name
+  board        String? // University / Board name
   startYear    Int?
   endYear      Int?
-  grade        String?   // Percentage / CGPA
-  createdAt    DateTime  @default(now())
+  grade        String? // Percentage / CGPA
+  createdAt    DateTime @default(now())
 
   employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 
@@ -304,9 +311,9 @@ model Department {
   name           String
   code           String
   headId         Int?
-  description String?
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
+  description    String?
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
 
   organisation Organisation? @relation(fields: [organisationId], references: [id])
   head         Employee?     @relation("DeptHead", fields: [headId], references: [id])
@@ -317,13 +324,13 @@ model Department {
 }
 
 model Designation {
-  id             Int        @id @default(autoincrement())
+  id             Int      @id @default(autoincrement())
   organisationId Int?
   name           String
   level          Int?
-  description String?
-  isActive    Boolean    @default(true)
-  createdAt   DateTime   @default(now())
+  description    String?
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
 
   organisation Organisation? @relation(fields: [organisationId], references: [id])
   employees    Employee[]
@@ -385,9 +392,9 @@ model LeaveApplication {
   approvedOn      DateTime?
   rejectionReason String?
 
-  employee         Employee              @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-  leaveType        LeaveType             @relation(fields: [leaveTypeId], references: [id])
-  approvedBy       Employee?             @relation("LeaveApprover", fields: [approvedById], references: [id])
+  employee         Employee                @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  leaveType        LeaveType               @relation(fields: [leaveTypeId], references: [id])
+  approvedBy       Employee?               @relation("LeaveApprover", fields: [approvedById], references: [id])
   approvalWorkflow LeaveApprovalWorkflow[]
 
   @@map("leave_applications")
@@ -431,18 +438,18 @@ model Attendance {
 }
 
 model AttendanceRegularization {
-  id                 Int           @id @default(autoincrement())
-  attendanceId       Int
-  employeeId         Int
-  requestedClockIn   DateTime?
-  requestedClockOut  DateTime?
-  reason             String?
-  proofDocument      String?
-  status             RequestStatus @default(PENDING)
-  requestedOn        DateTime      @default(now())
-  approvedById       Int?
-  approvedOn         DateTime?
-  rejectionReason    String?
+  id                Int           @id @default(autoincrement())
+  attendanceId      Int
+  employeeId        Int
+  requestedClockIn  DateTime?
+  requestedClockOut DateTime?
+  reason            String?
+  proofDocument     String?
+  status            RequestStatus @default(PENDING)
+  requestedOn       DateTime      @default(now())
+  approvedById      Int?
+  approvedOn        DateTime?
+  rejectionReason   String?
 
   attendance Attendance @relation(fields: [attendanceId], references: [id], onDelete: Cascade)
   employee   Employee   @relation(fields: [employeeId], references: [id])
@@ -514,7 +521,8 @@ model Payroll {
   payslipPath     String?
   createdAt       DateTime      @default(now())
 
-  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  employee    Employee            @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  adjustments PayrollAdjustment[]
 
   @@unique([employeeId, month, year])
   @@map("payroll")
@@ -574,19 +582,20 @@ model Notification {
 }
 
 model ReimbursementClaim {
-  id          Int      @id @default(autoincrement())
-  employeeId  Int
-  title       String
-  description String?
-  totalAmount Float
-  status      String   @default("PENDING")
-  claimDate   DateTime @default(now())
-  approvedById Int?
-  approvedOn  DateTime?
+  id              Int       @id @default(autoincrement())
+  employeeId      Int
+  title           String
+  description     String?
+  totalAmount     Float
+  status          String    @default("PENDING")
+  claimDate       DateTime  @default(now())
+  approvedById    Int?
+  approvedOn      DateTime?
   rejectionReason String?
-  items       Json
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  items           Json
+  receiptPath     String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
   employee   Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
   approvedBy Employee? @relation("ReimbursementApprover", fields: [approvedById], references: [id])
@@ -607,4 +616,264 @@ model Holiday {
   organisation Organisation? @relation(fields: [organisationId], references: [id])
 
   @@map("holidays")
+}
+
+// ─── Permissions ───────────────────────────────────────────────────────────────
+
+model Permission {
+  id          Int     @id @default(autoincrement())
+  module      String
+  action      String
+  description String?
+
+  rolePermissions RolePermission[]
+
+  @@unique([module, action])
+  @@map("permissions")
+}
+
+model RolePermission {
+  id             Int      @id @default(autoincrement())
+  organisationId Int?
+  role           UserRole
+  permissionId   Int
+  granted        Boolean  @default(true)
+  createdAt      DateTime @default(now())
+
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([organisationId, role, permissionId])
+  @@map("role_permissions")
+}
+
+// ─── Announcements ─────────────────────────────────────────────────────────────
+
+enum AnnouncementPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+model Announcement {
+  id             Int                  @id @default(autoincrement())
+  organisationId Int?
+  title          String
+  content        String
+  priority       AnnouncementPriority @default(NORMAL)
+  isPinned       Boolean              @default(false)
+  publishedAt    DateTime             @default(now())
+  expiresAt      DateTime?
+  createdById    Int
+  isActive       Boolean              @default(true)
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+
+  createdBy Employee @relation(fields: [createdById], references: [id])
+
+  @@map("announcements")
+}
+
+// ─── Asset Tracking ────────────────────────────────────────────────────────────
+
+enum AssetCondition {
+  NEW
+  GOOD
+  FAIR
+  POOR
+  DAMAGED
+  RETIRED
+}
+
+model Asset {
+  id             Int            @id @default(autoincrement())
+  organisationId Int?
+  assetCode      String
+  name           String
+  category       String
+  brand          String?
+  modelName      String?
+  serialNumber   String?
+  purchaseDate   DateTime?
+  purchasePrice  Float?
+  condition      AssetCondition @default(GOOD)
+  assignedToId   Int?
+  assignedDate   DateTime?
+  notes          String?
+  isActive       Boolean        @default(true)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  assignedTo Employee? @relation(fields: [assignedToId], references: [id])
+
+  @@unique([organisationId, assetCode])
+  @@map("assets")
+}
+
+// ─── Audit Trail ───────────────────────────────────────────────────────────────
+
+model AuditLog {
+  id             Int      @id @default(autoincrement())
+  organisationId Int?
+  userId         Int
+  action         String
+  module         String
+  entityId       Int?
+  entityType     String?
+  description    String?
+  oldValues      Json?
+  newValues      Json?
+  ipAddress      String?
+  userAgent      String?
+  createdAt      DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([organisationId, module, createdAt])
+  @@map("audit_logs")
+}
+
+// ─── Expense Policies ──────────────────────────────────────────────────────────
+
+model ExpensePolicy {
+  id                Int      @id @default(autoincrement())
+  organisationId    Int?
+  category          String
+  maxAmountPerClaim Float?
+  maxAmountPerMonth Float?
+  requiresReceipt   Boolean  @default(true)
+  requiresApproval  Boolean  @default(true)
+  autoApproveBelow  Float?
+  isActive          Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@unique([organisationId, category])
+  @@map("expense_policies")
+}
+
+// ─── Payroll Adjustments ───────────────────────────────────────────────────────
+
+enum AdjustmentType {
+  BONUS
+  DEDUCTION
+  ADVANCE
+  OVERTIME
+  INCENTIVE
+  REIMBURSEMENT_PAYOUT
+}
+
+model PayrollAdjustment {
+  id          Int            @id @default(autoincrement())
+  payrollId   Int
+  type        AdjustmentType
+  amount      Float
+  description String?
+  approvedBy  Int?
+  createdAt   DateTime       @default(now())
+
+  payroll Payroll @relation(fields: [payrollId], references: [id], onDelete: Cascade)
+
+  @@map("payroll_adjustments")
+}
+
+// ─── Payroll Revision History ──────────────────────────────────────────────────
+
+model PayrollRevision {
+  id             Int      @id @default(autoincrement())
+  employeeId     Int
+  changedBy      Int
+  changeType     String // SALARY_UPDATE, STRUCTURE_CHANGE, COMPONENT_EDIT
+  previousValues Json
+  newValues      Json
+  reason         String?
+  createdAt      DateTime @default(now())
+
+  @@index([employeeId, createdAt])
+  @@map("payroll_revisions")
+}
+
+// ─── Travel Claims ─────────────────────────────────────────────────────────────
+
+enum TravelStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  REJECTED
+  SETTLED
+}
+
+model TravelClaim {
+  id              Int          @id @default(autoincrement())
+  employeeId      Int
+  organisationId  Int?
+  title           String
+  purpose         String?
+  fromCity        String
+  toCity          String
+  travelStartDate DateTime     @db.Date
+  travelEndDate   DateTime     @db.Date
+  travelMode      String? // FLIGHT, TRAIN, BUS, CAB, SELF
+  hotelAmount     Float        @default(0)
+  transportAmount Float        @default(0)
+  mealsAmount     Float        @default(0)
+  perDiemAmount   Float        @default(0)
+  miscAmount      Float        @default(0)
+  totalAmount     Float        @default(0)
+  itinerary       Json? // Array of day-wise breakdown
+  receiptPaths    Json? // Array of file paths
+  status          TravelStatus @default(DRAFT)
+  approvedById    Int?
+  approvedOn      DateTime?
+  rejectionReason String?
+  remarks         String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  employee   Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  approvedBy Employee? @relation("TravelApprover", fields: [approvedById], references: [id])
+
+  @@index([organisationId, status])
+  @@map("travel_claims")
+}
+
+// ─── Pulse Survey (Team Mood Check) ────────────────────────────────────────────
+
+enum SurveyFrequency {
+  WEEKLY
+  BIWEEKLY
+  MONTHLY
+}
+
+model PulseSurvey {
+  id             Int             @id @default(autoincrement())
+  organisationId Int?
+  title          String
+  question       String          @default("How are you feeling about work this week?")
+  frequency      SurveyFrequency @default(WEEKLY)
+  isActive       Boolean         @default(true)
+  startsAt       DateTime        @default(now())
+  endsAt         DateTime?
+  createdBy      Int
+  createdAt      DateTime        @default(now())
+
+  responses PulseSurveyResponse[]
+
+  @@map("pulse_surveys")
+}
+
+model PulseSurveyResponse {
+  id         Int      @id @default(autoincrement())
+  surveyId   Int
+  employeeId Int
+  rating     Int // 1-5
+  comment    String?
+  weekLabel  String // e.g. "2026-W16" for dedup
+  createdAt  DateTime @default(now())
+
+  survey   PulseSurvey @relation(fields: [surveyId], references: [id], onDelete: Cascade)
+  employee Employee    @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([surveyId, employeeId, weekLabel])
+  @@map("pulse_survey_responses")
 }

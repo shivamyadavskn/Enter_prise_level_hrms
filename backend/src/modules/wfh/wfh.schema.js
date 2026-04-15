@@ -13,7 +13,7 @@ export const approveRejectWfhSchema = z.object({
 
 export const wfhQuerySchema = z.object({
   page: z.coerce.number().min(1).default(1),
-  limit: z.coerce.number().min(1).max(100).default(10),
+  limit: z.coerce.number().min(1).max(200).default(10),
   status: z.enum(["PENDING", "APPROVED", "REJECTED", "CANCELLED"]).optional(),
   employeeId: z.coerce.number().int().positive().optional(),
   startDate: z.string().optional(),

@@ -1,6 +1,7 @@
 import { Router } from "express";
 import multer from "multer";
 import { getEmployees, getEmployeeById, createEmployee, updateEmployee, deleteEmployee, getMyProfile, getTeamMembers, getExperiences, addExperience, updateExperience, deleteExperience, getEducations, addEducation, updateEducation, deleteEducation } from "./employees.controller.js";
+import { getMyInsights } from "./insights.controller.js";
 import { previewImport, executeImport } from "./import.controller.js";
 import { authenticate } from "../../middlewares/auth.middleware.js";
 import { authorize } from "../../middlewares/rbac.middleware.js";
@@ -17,6 +18,7 @@ router.post("/import/preview", authorize("SUPER_ADMIN", "ADMIN"), upload.single(
 router.post("/import/execute", authorize("SUPER_ADMIN", "ADMIN"), upload.single("file"), executeImport);
 
 router.get("/me", getMyProfile);
+router.get("/me/insights", getMyInsights);
 router.get("/team", authorize("MANAGER", "ADMIN", "SUPER_ADMIN"), getTeamMembers);
 router.get("/", authorize("SUPER_ADMIN", "ADMIN", "MANAGER"), validateQuery(employeeQuerySchema), getEmployees);
 router.get("/:id", getEmployeeById);
