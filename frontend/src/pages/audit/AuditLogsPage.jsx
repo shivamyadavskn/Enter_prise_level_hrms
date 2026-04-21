@@ -156,7 +156,7 @@ export default function AuditLogsPage() {
 
   const logs = data?.data?.data || []
   const pagination = data?.data?.pagination || {}
-  const modules = modulesData?.data || []
+  const modules = modulesData?.data?.data || []
   const actions = [...new Set(logs.map(log => log.action))].sort()
 
   const hasActiveFilters = Object.values(filters).some(v => v !== '')

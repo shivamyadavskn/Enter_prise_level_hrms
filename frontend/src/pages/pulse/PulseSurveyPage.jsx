@@ -355,7 +355,7 @@ export default function PulseSurveyPage() {
   const handleViewResults = async (survey) => {
     try {
       const response = await pulseApi.getResults(survey.id)
-      setSurveyResults(response.data)
+      setSurveyResults(response.data?.data || response.data)
       setSelectedSurvey(survey)
       setShowResults(true)
     } catch (error) {
@@ -371,8 +371,8 @@ export default function PulseSurveyPage() {
 
   if (isLoading) return <PageLoader />
 
-  const surveys = surveysData?.data || []
-  const myHistory = myHistoryData?.data || []
+  const surveys = surveysData?.data?.data || []
+  const myHistory = myHistoryData?.data?.data || []
   const activeSurveys = surveys.filter(s => s.isActive)
   const closedSurveys = surveys.filter(s => !s.isActive)
 

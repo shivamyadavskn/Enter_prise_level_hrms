@@ -423,7 +423,7 @@ export default function AssetsPage() {
 
   const assets = data?.data?.data || []
   const pagination = data?.data?.pagination || {}
-  const stats = statsData?.data || {}
+  const stats = statsData?.data?.data || {}
 
   const conditionConfig = (condition) => ASSET_CONDITIONS.find(c => c.value === condition)
 
