@@ -70,7 +70,14 @@ export const createUser = async (req, res) => {
 
     const passwordHash = await bcrypt.hash(password, 10);
     const user = await prisma.user.create({
-      data: { username, email, passwordHash, role },
+      data: {
+        username,
+        email,
+        passwordHash,
+        role,
+        // Always inherit the creator's organisation so the new user is org-scoped.
+        organisationId: req.organisationId || undefined,
+      },
       select: userSelect,
     });
 
@@ -81,6 +88,7 @@ export const createUser = async (req, res) => {
     return R.error(res, err.message);
   }
 };
+
 
 export const updateUser = async (req, res) => {
   try {

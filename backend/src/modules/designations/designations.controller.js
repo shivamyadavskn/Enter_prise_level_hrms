@@ -5,7 +5,12 @@ export const getDesignations = async (req, res) => {
   try {
     const { page = 1, limit = 50, isActive, search } = req.query;
     const where = {};
-    if (req.organisationId) where.organisationId = req.organisationId;
+    // Always scope to the user's org — prevents null-org seed records leaking to org users.
+    if (req.organisationId) {
+      where.organisationId = req.organisationId;
+    } else if (!req.isPlatformAdmin) {
+      where.organisationId = null;
+    }
     if (isActive !== undefined) where.isActive = isActive === "true" || isActive === true;
     if (search) where.name = { contains: search, mode: "insensitive" };
 

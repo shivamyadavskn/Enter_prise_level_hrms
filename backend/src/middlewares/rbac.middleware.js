@@ -18,6 +18,7 @@ const ROLE_HIERARCHY = {
   MANAGER: 3,
   FINANCE: 2,
   EMPLOYEE: 1,
+  INTERN: 1,
 };
 
 export const authorize = (...allowedRoles) => {

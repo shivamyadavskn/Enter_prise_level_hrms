@@ -79,17 +79,61 @@ export const getEmployeeById = async (req, res) => {
 export const createEmployee = async (req, res) => {
   try {
     const data = req.body;
+    const orgId = req.organisationId;
 
-    const dupWhere = { OR: [{ employeeCode: data.employeeCode }] };
-    if (data.userId) dupWhere.OR.push({ userId: data.userId });
-    if (req.organisationId) dupWhere.organisationId = req.organisationId;
+    // ── Duplicate check (org-scoped) ─────────────────────────────────────────
+    const dupOrConditions = [{ employeeCode: data.employeeCode }];
+    if (data.userId) dupOrConditions.push({ userId: data.userId });
+    const dupWhere = { OR: dupOrConditions };
+    if (orgId) dupWhere.organisationId = orgId;
     const existing = await prisma.employee.findFirst({ where: dupWhere });
     if (existing) return R.badRequest(res, "Employee code or user already exists");
+
+    // ── Validate departmentId belongs to this organisation ───────────────────
+    if (data.departmentId) {
+      const dept = await prisma.department.findUnique({
+        where: { id: Number(data.departmentId) },
+        select: { id: true, organisationId: true, isActive: true },
+      });
+      if (!dept) return R.badRequest(res, "Selected department does not exist");
+      if (!dept.isActive) return R.badRequest(res, "Selected department is inactive");
+      if (orgId && dept.organisationId !== orgId) {
+        return R.badRequest(res, "Selected department does not belong to your organisation");
+      }
+    }
+
+    // ── Validate designationId belongs to this organisation ──────────────────
+    if (data.designationId) {
+      const desig = await prisma.designation.findUnique({
+        where: { id: Number(data.designationId) },
+        select: { id: true, organisationId: true, isActive: true },
+      });
+      if (!desig) return R.badRequest(res, "Selected designation does not exist");
+      if (!desig.isActive) return R.badRequest(res, "Selected designation is inactive");
+      if (orgId && desig.organisationId !== orgId) {
+        return R.badRequest(res, "Selected designation does not belong to your organisation");
+      }
+    }
+
+    // ── Validate managerId belongs to this organisation ──────────────────────
+    if (data.managerId) {
+      const manager = await prisma.employee.findUnique({
+        where: { id: Number(data.managerId) },
+        select: { id: true, organisationId: true },
+      });
+      if (!manager) return R.badRequest(res, "Selected manager does not exist");
+      if (orgId && manager.organisationId !== orgId) {
+        return R.badRequest(res, "Selected manager does not belong to your organisation");
+      }
+    }
 
     const employee = await prisma.employee.create({
       data: {
         ...data,
-        organisationId: req.organisationId || undefined,
+        organisationId: orgId || undefined,
+        departmentId: data.departmentId ? Number(data.departmentId) : undefined,
+        designationId: data.designationId ? Number(data.designationId) : undefined,
+        managerId: data.managerId ? Number(data.managerId) : undefined,
         dateOfBirth: data.dateOfBirth ? new Date(data.dateOfBirth) : undefined,
         dateOfJoining: data.dateOfJoining ? new Date(data.dateOfJoining) : undefined,
       },
@@ -135,6 +179,49 @@ export const updateEmployee = async (req, res) => {
     if (data.dateOfJoining) data.dateOfJoining = new Date(data.dateOfJoining);
     if (data.dateOfConfirmation) data.dateOfConfirmation = new Date(data.dateOfConfirmation);
     if (data.dateOfLeaving) data.dateOfLeaving = new Date(data.dateOfLeaving);
+
+    const orgId = req.organisationId;
+
+    // ── Validate departmentId belongs to this organisation ───────────────────
+    if (data.departmentId != null && data.departmentId !== "") {
+      const dept = await prisma.department.findUnique({
+        where: { id: Number(data.departmentId) },
+        select: { id: true, organisationId: true, isActive: true },
+      });
+      if (!dept) return R.badRequest(res, "Selected department does not exist");
+      if (!dept.isActive) return R.badRequest(res, "Selected department is inactive");
+      if (orgId && dept.organisationId !== orgId) {
+        return R.badRequest(res, "Selected department does not belong to your organisation");
+      }
+      data.departmentId = Number(data.departmentId);
+    }
+
+    // ── Validate designationId belongs to this organisation ──────────────────
+    if (data.designationId != null && data.designationId !== "") {
+      const desig = await prisma.designation.findUnique({
+        where: { id: Number(data.designationId) },
+        select: { id: true, organisationId: true, isActive: true },
+      });
+      if (!desig) return R.badRequest(res, "Selected designation does not exist");
+      if (!desig.isActive) return R.badRequest(res, "Selected designation is inactive");
+      if (orgId && desig.organisationId !== orgId) {
+        return R.badRequest(res, "Selected designation does not belong to your organisation");
+      }
+      data.designationId = Number(data.designationId);
+    }
+
+    // ── Validate managerId belongs to this organisation ──────────────────────
+    if (data.managerId != null && data.managerId !== "") {
+      const manager = await prisma.employee.findUnique({
+        where: { id: Number(data.managerId) },
+        select: { id: true, organisationId: true },
+      });
+      if (!manager) return R.badRequest(res, "Selected manager does not exist");
+      if (orgId && manager.organisationId !== orgId) {
+        return R.badRequest(res, "Selected manager does not belong to your organisation");
+      }
+      data.managerId = Number(data.managerId);
+    }
 
     const employee = await prisma.employee.update({ where: { id }, data, include: employeeInclude });
     return R.success(res, employee, "Employee updated successfully");

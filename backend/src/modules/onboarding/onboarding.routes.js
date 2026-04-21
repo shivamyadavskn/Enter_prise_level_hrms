@@ -20,7 +20,7 @@ router.delete("/tasks/:id", authorize("SUPER_ADMIN", "ADMIN", "HR"), deleteTask)
 router.get("/my", getMyChecklist);
 
 // All checklists (Admin/Manager view)
-router.get("/all", authorize("SUPER_ADMIN", "ADMIN", "MANAGER"), getAllChecklists);
+router.get("/all", authorize("SUPER_ADMIN", "ADMIN", "HR", "MANAGER"), getAllChecklists);
 
 // Per-employee checklist
 router.get("/:employeeId", getEmployeeChecklist);

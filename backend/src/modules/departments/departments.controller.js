@@ -10,7 +10,15 @@ export const getDepartments = async (req, res) => {
   try {
     const { page = 1, limit = 50, isActive, search } = req.query;
     const where = {};
-    if (req.organisationId) where.organisationId = req.organisationId;
+    // Always scope to the user's org — if they have one, only show that org's data.
+    // This prevents null-org seed/global records from leaking to org-scoped users.
+    if (req.organisationId) {
+      where.organisationId = req.organisationId;
+    } else if (!req.isPlatformAdmin) {
+      // Non-platform-admin without an org: only show truly global (null) records
+      where.organisationId = null;
+    }
+    // PLATFORM_ADMIN with no org filter set sees everything (no where.organisationId restriction)
     if (isActive !== undefined) where.isActive = isActive === "true" || isActive === true;
     if (search) where.OR = [
       { name: { contains: search, mode: "insensitive" } },

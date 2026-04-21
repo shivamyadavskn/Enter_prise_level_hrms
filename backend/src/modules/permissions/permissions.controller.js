@@ -4,11 +4,13 @@ import { logAudit } from "../../services/audit.service.js";
 
 // Default permissions matrix — defines what each role CAN do out of the box
 const DEFAULT_PERMISSIONS = {
-  SUPER_ADMIN: { employees: ["view","create","update","delete"], departments: ["view","create","update","delete"], designations: ["view","create","update","delete"], leaves: ["view","apply","approve","reject","manage_types","allocate"], attendance: ["view","clock","approve","regularize"], wfh: ["view","apply","approve","reject"], payroll: ["view","process","salary_setup","payment_status"], performance: ["view","create","appraise"], documents: ["view","upload","delete","generate"], reports: ["view","export"], holidays: ["view","create","update","delete"], reimbursements: ["view","create","approve","reject","policies"], onboarding: ["view","manage_tasks","assign"], announcements: ["view","create","update","delete","pin"], assets: ["view","create","update","delete","assign"], organisation: ["view","update"], users: ["view","create","update","delete"], permissions: ["view","update"], audit_logs: ["view"] },
-  ADMIN:       { employees: ["view","create","update","delete"], departments: ["view","create","update","delete"], designations: ["view","create","update","delete"], leaves: ["view","apply","approve","reject","manage_types","allocate"], attendance: ["view","clock","approve","regularize"], wfh: ["view","apply","approve","reject"], payroll: ["view","process","salary_setup","payment_status"], performance: ["view","create","appraise"], documents: ["view","upload","delete","generate"], reports: ["view","export"], holidays: ["view","create","update","delete"], reimbursements: ["view","create","approve","reject","policies"], onboarding: ["view","manage_tasks","assign"], announcements: ["view","create","update","delete","pin"], assets: ["view","create","update","delete","assign"], organisation: ["view","update"], users: ["view","create","update"], permissions: ["view","update"], audit_logs: ["view"] },
-  MANAGER:     { employees: ["view"], departments: ["view"], designations: ["view"], leaves: ["view","apply","approve","reject"], attendance: ["view","clock","approve"], wfh: ["view","apply","approve","reject"], payroll: ["view"], performance: ["view","create","appraise"], documents: ["view","upload"], reports: ["view","export"], holidays: ["view"], reimbursements: ["view","create","approve","reject"], onboarding: ["view","assign"], announcements: ["view","create"], assets: ["view"] },
-  FINANCE:     { employees: ["view"], departments: ["view"], designations: ["view"], leaves: ["view","apply"], attendance: ["view","clock"], wfh: ["view","apply"], payroll: ["view","process","salary_setup","payment_status"], performance: ["view"], documents: ["view","upload","generate"], reports: ["view","export"], holidays: ["view"], reimbursements: ["view","create","approve","reject","policies"], onboarding: ["view"], announcements: ["view"], assets: ["view"] },
-  EMPLOYEE:    { employees: ["view_self"], departments: ["view"], designations: ["view"], leaves: ["view","apply"], attendance: ["view","clock","regularize"], wfh: ["view","apply"], payroll: ["view_self"], performance: ["view_self","appraise_self"], documents: ["view","upload"], reports: [], holidays: ["view"], reimbursements: ["view","create"], onboarding: ["view"], announcements: ["view"], assets: ["view_self"] },
+  SUPER_ADMIN: { employees: ["view", "create", "update", "delete"], departments: ["view", "create", "update", "delete"], designations: ["view", "create", "update", "delete"], leaves: ["view", "apply", "approve", "reject", "manage_types", "allocate"], attendance: ["view", "clock", "approve", "regularize"], wfh: ["view", "apply", "approve", "reject"], payroll: ["view", "process", "salary_setup", "payment_status"], performance: ["view", "create", "appraise"], documents: ["view", "upload", "delete", "generate"], reports: ["view", "export"], holidays: ["view", "create", "update", "delete"], reimbursements: ["view", "create", "approve", "reject", "policies"], onboarding: ["view", "manage_tasks", "assign"], announcements: ["view", "create", "update", "delete", "pin"], assets: ["view", "create", "update", "delete", "assign"], organisation: ["view", "update"], users: ["view", "create", "update", "delete"], permissions: ["view", "update"], audit_logs: ["view"] },
+  ADMIN: { employees: ["view", "create", "update", "delete"], departments: ["view", "create", "update", "delete"], designations: ["view", "create", "update", "delete"], leaves: ["view", "apply", "approve", "reject", "manage_types", "allocate"], attendance: ["view", "clock", "approve", "regularize"], wfh: ["view", "apply", "approve", "reject"], payroll: ["view", "process", "salary_setup", "payment_status"], performance: ["view", "create", "appraise"], documents: ["view", "upload", "delete", "generate"], reports: ["view", "export"], holidays: ["view", "create", "update", "delete"], reimbursements: ["view", "create", "approve", "reject", "policies"], onboarding: ["view", "manage_tasks", "assign"], announcements: ["view", "create", "update", "delete", "pin"], assets: ["view", "create", "update", "delete", "assign"], organisation: ["view", "update"], users: ["view", "create", "update"], permissions: ["view", "update"], audit_logs: ["view"] },
+  HR: { employees: ["view", "create", "update"], departments: ["view", "create", "update"], designations: ["view", "create", "update"], leaves: ["view", "apply", "approve", "reject", "manage_types", "allocate"], attendance: ["view", "clock", "approve", "regularize"], wfh: ["view", "apply", "approve", "reject"], payroll: ["view"], performance: ["view", "create", "appraise"], documents: ["view", "upload", "delete", "generate"], reports: ["view", "export"], holidays: ["view", "create", "update", "delete"], reimbursements: ["view", "create", "approve", "reject"], onboarding: ["view", "manage_tasks", "assign"], announcements: ["view", "create", "update", "delete"], assets: ["view", "create", "update", "assign"], organisation: ["view"], users: ["view", "create", "update"], permissions: ["view"], audit_logs: ["view"] },
+  MANAGER: { employees: ["view"], departments: ["view"], designations: ["view"], leaves: ["view", "apply", "approve", "reject"], attendance: ["view", "clock", "approve"], wfh: ["view", "apply", "approve", "reject"], payroll: ["view"], performance: ["view", "create", "appraise"], documents: ["view", "upload"], reports: ["view", "export"], holidays: ["view"], reimbursements: ["view", "create", "approve", "reject"], onboarding: ["view", "assign"], announcements: ["view", "create"], assets: ["view"] },
+  FINANCE: { employees: ["view"], departments: ["view"], designations: ["view"], leaves: ["view", "apply"], attendance: ["view", "clock"], wfh: ["view", "apply"], payroll: ["view", "process", "salary_setup", "payment_status"], performance: ["view"], documents: ["view", "upload", "generate"], reports: ["view", "export"], holidays: ["view"], reimbursements: ["view", "create", "approve", "reject", "policies"], onboarding: ["view"], announcements: ["view"], assets: ["view"] },
+  EMPLOYEE: { employees: ["view_self"], departments: ["view"], designations: ["view"], leaves: ["view", "apply"], attendance: ["view", "clock", "regularize"], wfh: ["view", "apply"], payroll: ["view_self"], performance: ["view_self", "appraise_self"], documents: ["view", "upload"], reports: [], holidays: ["view"], reimbursements: ["view", "create"], onboarding: ["view"], announcements: ["view"], assets: ["view_self"] },
+  INTERN: { employees: ["view_self"], departments: ["view"], designations: ["view"], leaves: ["view", "apply"], attendance: ["view", "clock", "regularize"], wfh: ["view", "apply"], payroll: ["view_self"], performance: ["view_self"], documents: ["view", "upload"], reports: [], holidays: ["view"], reimbursements: ["view", "create"], onboarding: ["view"], announcements: ["view"], assets: ["view_self"] },
 };
 
 export const getPermissions = async (req, res) => {
@@ -217,6 +219,38 @@ export const getRoleAccessMatrix = async (_req, res) => {
         ],
         restrictions: ["Cannot delete users", "Cannot modify SUPER_ADMIN permissions"],
       },
+      HR: {
+        description: "HR Manager — people operations and full HR lifecycle",
+        scope: "Organisation-wide HR data",
+        capabilities: [
+          "Employee management (create, update — cannot delete)",
+          "Department and designation management (create, update)",
+          "Leave management (approve, reject, configure types, allocate)",
+          "Attendance management (approve, regularize)",
+          "WFH request approval",
+          "View payroll (read-only — cannot process or modify salary)",
+          "Performance reviews (create, appraise)",
+          "Document management (upload, delete, generate)",
+          "Full report access with export",
+          "Holiday management",
+          "Reimbursement approval",
+          "Onboarding task management and assignment",
+          "Announcement management (create, update, delete)",
+          "Asset management (create, assign)",
+          "View organisation settings",
+          "User management (create, update — cannot delete)",
+          "View permissions matrix",
+          "Audit log access",
+        ],
+        restrictions: [
+          "Cannot delete employees or users",
+          "Cannot process payroll or modify salary structures",
+          "Cannot manage expense policies",
+          "Cannot modify permissions or organisation settings",
+          "Cannot pin announcements",
+          "Cannot delete or retire assets",
+        ],
+      },
       FINANCE: {
         description: "Finance team — payroll and financial operations",
         scope: "Organisation-wide financial data",
@@ -293,6 +327,29 @@ export const getRoleAccessMatrix = async (_req, res) => {
           "Cannot access any admin, HR, or financial functions",
           "Cannot view reports",
           "Cannot manage any organisational settings",
+        ],
+      },
+      INTERN: {
+        description: "Intern — restricted self-service. Append a Custom Role for extra access.",
+        scope: "Own data only (extendable via Custom Role)",
+        capabilities: [
+          "View own profile",
+          "Apply for leaves and WFH",
+          "Clock in/out and request regularization",
+          "Submit reimbursement and travel claims",
+          "Upload personal documents",
+          "View own performance reviews",
+          "View announcements and holidays",
+          "View own onboarding checklist",
+          "Participate in pulse surveys",
+        ],
+        restrictions: [
+          "Cannot self-appraise by default (unless Custom Role grants it)",
+          "Cannot view other employees' data",
+          "Cannot approve any requests",
+          "Cannot access admin, HR, payroll, or financial functions",
+          "Cannot view reports",
+          "Extra access is granted via a Custom Role assigned by Super Admin / Admin",
         ],
       },
     };

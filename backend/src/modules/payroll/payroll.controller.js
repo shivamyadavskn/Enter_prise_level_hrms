@@ -76,11 +76,177 @@ export const upsertSalaryStructure = async (req, res) => {
   }
 };
 
+// ── Update Salary Structure with Revision Tracking ────────────────────────────
+
+export const updateSalaryStructure = async (req, res) => {
+  try {
+    const data = req.body;
+    const {
+      employeeId, effectiveFrom, basicSalary, hra, conveyanceAllowance,
+      medicalAllowance, specialAllowance, pfEmployee, pfEmployer, professionalTax, tds,
+      reason,
+    } = data;
+
+    // Get the current active structure for comparison
+    const currentStructure = await prisma.salaryStructure.findFirst({
+      where: { employeeId: Number(employeeId), isActive: true },
+    });
+
+    if (!currentStructure) {
+      return R.notFound(res, "No active salary structure found. Use create endpoint instead.");
+    }
+
+    // Calculate new values
+    const grossSalary = basicSalary + hra + conveyanceAllowance + medicalAllowance + specialAllowance;
+    const totalDeductions = pfEmployee + professionalTax + tds;
+    const netSalary = grossSalary - totalDeductions;
+    const ctc = grossSalary + pfEmployer;
+
+    // Store previous values for revision log
+    const previousValues = {
+      basicSalary: currentStructure.basicSalary,
+      hra: currentStructure.hra,
+      conveyanceAllowance: currentStructure.conveyanceAllowance,
+      medicalAllowance: currentStructure.medicalAllowance,
+      specialAllowance: currentStructure.specialAllowance,
+      pfEmployee: currentStructure.pfEmployee,
+      pfEmployer: currentStructure.pfEmployer,
+      professionalTax: currentStructure.professionalTax,
+      tds: currentStructure.tds,
+      grossSalary: currentStructure.grossSalary,
+      totalDeductions: currentStructure.totalDeductions,
+      netSalary: currentStructure.netSalary,
+      ctc: currentStructure.ctc,
+    };
+
+    const newValues = {
+      basicSalary, hra, conveyanceAllowance, medicalAllowance, specialAllowance,
+      pfEmployee, pfEmployer, professionalTax, tds,
+      grossSalary, totalDeductions, netSalary, ctc,
+    };
+
+    // Deactivate old structure
+    await prisma.salaryStructure.updateMany({
+      where: { employeeId: Number(employeeId), isActive: true },
+      data: { isActive: false },
+    });
+
+    // Create new structure
+    const structure = await prisma.salaryStructure.create({
+      data: {
+        employeeId: Number(employeeId),
+        effectiveFrom: new Date(effectiveFrom),
+        basicSalary, hra, conveyanceAllowance, medicalAllowance, specialAllowance,
+        grossSalary,
+        pfEmployee, pfEmployer, professionalTax, tds,
+        totalDeductions,
+        netSalary,
+        ctc,
+        isActive: true,
+      },
+    });
+
+    // Log revision
+    await prisma.payrollRevision.create({
+      data: {
+        employeeId: Number(employeeId),
+        changedBy: req.user.id,
+        changeType: "SALARY_UPDATE",
+        previousValues,
+        newValues,
+        reason: reason || "No reason provided",
+      },
+    });
+
+    // Create notification for employee
+    const emp = await prisma.employee.findUnique({
+      where: { id: Number(employeeId) },
+      include: { user: true },
+    });
+
+    if (emp?.user) {
+      await prisma.notification.create({
+        data: {
+          userId: emp.user.id,
+          notificationType: "SALARY_UPDATE",
+          title: "Salary Structure Updated",
+          message: `Your salary structure has been updated. New Net Salary: ₹${netSalary.toLocaleString("en-IN")}. Effective from: ${effectiveFrom}`,
+        },
+      });
+    }
+
+    return R.success(res, {
+      structure,
+      revision: {
+        previousNet: previousValues.netSalary,
+        newNet: netSalary,
+        difference: netSalary - previousValues.netSalary,
+      },
+    }, "Salary structure updated with audit trail");
+  } catch (err) {
+    return R.error(res, err.message);
+  }
+};
+
+
+// ── Get Salary Revision History ───────────────────────────────────────────────
+
+export const getSalaryRevisions = async (req, res) => {
+  try {
+    const { employeeId } = req.params;
+    const { page = 1, limit = 10 } = req.query;
+
+    const where = { employeeId: Number(employeeId) };
+
+    const [revisions, total] = await Promise.all([
+      prisma.payrollRevision.findMany({
+        where,
+        skip: (Number(page) - 1) * Number(limit),
+        take: Number(limit),
+        orderBy: { createdAt: "desc" },
+        include: {
+          user: {
+            select: {
+              id: true,
+              username: true,
+              employee: {
+                select: { firstName: true, lastName: true },
+              },
+            },
+          },
+        },
+      }),
+      prisma.payrollRevision.count({ where }),
+    ]);
+
+    // Format revisions for frontend
+    const formattedRevisions = revisions.map((rev) => ({
+      id: rev.id,
+      changeType: rev.changeType,
+      reason: rev.reason,
+      createdAt: rev.createdAt,
+      changedBy: rev.user
+        ? `${rev.user.employee?.firstName || ""} ${rev.user.employee?.lastName || ""}`.trim() || rev.user.username
+        : "Unknown",
+      changes: Object.keys(rev.newValues || {}).map((key) => ({
+        field: key,
+        oldValue: rev.previousValues?.[key] || 0,
+        newValue: rev.newValues?.[key] || 0,
+        difference: (rev.newValues?.[key] || 0) - (rev.previousValues?.[key] || 0),
+      })).filter(c => c.oldValue !== c.newValue),
+    }));
+
+    return R.paginated(res, formattedRevisions, total, page, limit);
+  } catch (err) {
+    return R.error(res, err.message);
+  }
+};
+
 // ── Payroll Processing ────────────────────────────────────────────────────────
 
 export const processPayroll = async (req, res) => {
   try {
-    const { month, year, employeeIds } = req.body;
+    const { month, year, employeeIds, workingDaysOverride = {} } = req.body;
 
     const start = new Date(year, month - 1, 1);
     const end = new Date(year, month, 0);
@@ -127,16 +293,52 @@ export const processPayroll = async (req, res) => {
       const unpaidLeaves = leaves.filter((l) => l.leaveType.code === "LOP").reduce((s, l) => s + l.totalDays, 0);
 
       const perDaySalary = salary.grossSalary / totalDaysInMonth;
-      const lopDeduction = unpaidLeaves * perDaySalary;
 
-      const grossSalary = salary.grossSalary - lopDeduction;
+      // Calculate payable days: present + half days + WFH + paid leaves (all paid)
+      // unpaidLeaves (LOP) are NOT payable - these are already excluded
+      const calculatedPayableDays = presentDays + (halfDays * 0.5) + wfhDays + paidLeaves;
+
+      // Use manual override if provided (e.g., for new joiners mid-month)
+      const payableDays = workingDaysOverride[emp.id] !== undefined
+        ? workingDaysOverride[emp.id]
+        : calculatedPayableDays;
+
+      // Prorated gross salary based on actual payable days
+      const grossSalary = Math.round(perDaySalary * payableDays);
+
+      // Deductions are also prorated (PF, PT, TDS based on actual salary earned)
+      // For simplicity, we keep fixed deductions but you could also prorate them
       const totalDeductions = salary.totalDeductions;
       const netSalary = Math.max(0, grossSalary - totalDeductions);
 
+      // Store actual working days (payable days) for reference
       const payroll = await prisma.payroll.upsert({
         where: { employeeId_month_year: { employeeId: emp.id, month, year } },
-        update: { workingDays: totalDaysInMonth, presentDays: effectivePresent, paidLeaves, unpaidLeaves, wfhDays, grossSalary, totalDeductions, netSalary, paymentStatus: "PROCESSED" },
-        create: { employeeId: emp.id, month, year, workingDays: totalDaysInMonth, presentDays: effectivePresent, paidLeaves, unpaidLeaves, wfhDays, grossSalary, totalDeductions, netSalary, paymentStatus: "PROCESSED" },
+        update: {
+          workingDays: totalDaysInMonth,
+          presentDays: payableDays,  // Now stores payable days (not just present)
+          paidLeaves,
+          unpaidLeaves,
+          wfhDays,
+          grossSalary,
+          totalDeductions,
+          netSalary,
+          paymentStatus: "PROCESSED"
+        },
+        create: {
+          employeeId: emp.id,
+          month,
+          year,
+          workingDays: totalDaysInMonth,
+          presentDays: payableDays,
+          paidLeaves,
+          unpaidLeaves,
+          wfhDays,
+          grossSalary,
+          totalDeductions,
+          netSalary,
+          paymentStatus: "PROCESSED"
+        },
       });
 
       results.push(payroll);
@@ -149,7 +351,7 @@ export const processPayroll = async (req, res) => {
           year,
           grossSalary,
           netSalary,
-        }).catch(() => {});
+        }).catch(() => { });
       }
     }
 
@@ -374,6 +576,8 @@ export const bulkUpdatePaymentStatus = async (req, res) => {
       where: { id: { in: payrollIds } },
       data: { paymentStatus, paymentDate: paymentDate ? new Date(paymentDate) : undefined },
     });
+
+    console.log("Hello payroll updated", updated);
 
     // Notify employees if marked as PAID
     if (paymentStatus === "PAID") {

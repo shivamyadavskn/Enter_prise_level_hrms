@@ -124,6 +124,9 @@ export const payrollApi = {
   getSalaryStructure: (empId) => api.get(`/payroll/salary-structure/${empId}`),
   getMissingSalary: () => api.get('/payroll/salary-structure/missing'),
   upsertSalaryStructure: (data) => api.post('/payroll/salary-structure', data),
+  updateSalaryStructure: (data) => api.put('/payroll/salary-structure', data),
+  getSalaryRevisions: (empId, params) => api.get(`/payroll/salary-structure/${empId}/revisions`, { params }),
+  bulkUpdatePaymentStatus: (data) => api.patch('/payroll/bulk-payment', data),
 }
 
 // ── Holidays ──────────────────────────────────────────────────────────────────
@@ -204,4 +207,15 @@ export const permissionsApi = {
   seedDefaults: () => api.post('/permissions/seed'),
   getDefaults: () => api.get('/permissions/defaults'),
   getRoleMatrix: () => api.get('/permissions/roles/matrix'),
+}
+
+// ── Custom Roles (Dynamic, per-organisation) ──────────────────────────────────
+export const customRolesApi = {
+  getAll: () => api.get('/custom-roles'),
+  getById: (id) => api.get(`/custom-roles/${id}`),
+  create: (data) => api.post('/custom-roles', data),
+  update: (id, data) => api.put(`/custom-roles/${id}`, data),
+  delete: (id) => api.delete(`/custom-roles/${id}`),
+  assignToEmployee: (data) => api.post('/custom-roles/assign', data),
+  getAvailablePermissions: () => api.get('/custom-roles/available-permissions'),
 }

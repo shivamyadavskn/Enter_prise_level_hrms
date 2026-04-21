@@ -12,14 +12,14 @@ const COMPANY = process.env.COMPANY_NAME || "HRMS Enterprise";
 // Supports Resend SMTP (default) or any SMTP via EMAIL_SMTP_* vars
 const transporter = process.env.RESEND_API_KEY
   ? nodemailer.createTransport({
-    host: process.env.EMAIL_SMTP_HOST || "smtp.resend.com",
-    port: Number(process.env.EMAIL_SMTP_PORT) || 465,
-    secure: true,
-    auth: {
-      user: process.env.EMAIL_SMTP_USER || "resend",
-      pass: process.env.RESEND_API_KEY,
-    },
-  })
+      host: process.env.EMAIL_SMTP_HOST || "smtp.resend.com",
+      port: Number(process.env.EMAIL_SMTP_PORT) || 465,
+      secure: true,
+      auth: {
+        user: process.env.EMAIL_SMTP_USER || "resend",
+        pass: process.env.RESEND_API_KEY,
+      },
+    })
   : null;
 
 // ─── Base Template ────────────────────────────────────────────────────────────
@@ -107,7 +107,9 @@ async function sendEmail({ to, subject, html }) {
       subject,
       html,
     });
-    console.log(`[EMAIL] ✉️  Sent "${subject}" → ${to} (msgId: ${info.messageId})`);
+    console.log(
+      `[EMAIL] ✉️  Sent "${subject}" → ${to} (msgId: ${info.messageId})`,
+    );
   } catch (err) {
     console.error(`[EMAIL] Failed "${subject}" → ${to}:`, err.message);
   }
@@ -120,214 +122,402 @@ export async function sendUserInvite({ email, username, password, role }) {
     ${heading("Welcome to " + COMPANY + "! 🎉")}
     ${para("Your account has been created. Here are your login credentials:")}
     ${infoTable([
-    ["Username", username],
-    ["Email", email],
-    ["Password", `<code style="background:#f1f5f9;padding:2px 8px;border-radius:4px;font-family:monospace;">${password}</code>`],
-    ["Role", badge(role, "purple")],
-  ])}
+      ["Username", username],
+      ["Email", email],
+      [
+        "Password",
+        `<code style="background:#f1f5f9;padding:2px 8px;border-radius:4px;font-family:monospace;">${password}</code>`,
+      ],
+      ["Role", badge(role, "purple")],
+    ])}
     ${para("Please log in and change your password immediately for security.")}
     ${btn("Log In Now", `${APP_URL}/login`)}
     ${divider()}
-    ${para('<strong>⚠️ Important:</strong> Do not share your credentials. If you did not expect this email, please contact your HR administrator.')}
+    ${para("<strong>⚠️ Important:</strong> Do not share your credentials. If you did not expect this email, please contact your HR administrator.")}
   `);
-  await sendEmail({ to: email, subject: `Welcome to ${COMPANY} — Your Account is Ready`, html });
+  await sendEmail({
+    to: email,
+    subject: `Welcome to ${COMPANY} — Your Account is Ready`,
+    html,
+  });
 }
 
-export async function sendEmployeeWelcome({ email, firstName, lastName, employeeCode, designation, department, dateOfJoining }) {
+export async function sendEmployeeWelcome({
+  email,
+  firstName,
+  lastName,
+  employeeCode,
+  designation,
+  department,
+  dateOfJoining,
+}) {
   const html = baseTemplate(`
     ${heading(`Welcome aboard, ${firstName}! 👋`)}
     ${para(`We're excited to have you join the ${COMPANY} family. Your employee profile has been set up.`)}
     ${infoTable([
-    ["Employee Code", employeeCode],
-    ["Name", `${firstName} ${lastName}`],
-    ["Designation", designation || "—"],
-    ["Department", department || "—"],
-    ["Date of Joining", dateOfJoining ? new Date(dateOfJoining).toLocaleDateString("en-IN", { day: "2-digit", month: "long", year: "numeric" }) : "—"],
-  ])}
+      ["Employee Code", employeeCode],
+      ["Name", `${firstName} ${lastName}`],
+      ["Designation", designation || "—"],
+      ["Department", department || "—"],
+      [
+        "Date of Joining",
+        dateOfJoining
+          ? new Date(dateOfJoining).toLocaleDateString("en-IN", {
+              day: "2-digit",
+              month: "long",
+              year: "numeric",
+            })
+          : "—",
+      ],
+    ])}
     ${para("You can now access your employee portal to view attendance, apply for leaves, and more.")}
     ${btn("Open Employee Portal", APP_URL)}
   `);
-  await sendEmail({ to: email, subject: `Welcome to ${COMPANY} — Employee Onboarding`, html });
+  await sendEmail({
+    to: email,
+    subject: `Welcome to ${COMPANY} — Employee Onboarding`,
+    html,
+  });
 }
 
-export async function sendLeaveApproved({ email, firstName, leaveType, startDate, endDate, totalDays, approverName }) {
-  const fmt = (d) => new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+export async function sendLeaveApproved({
+  email,
+  firstName,
+  leaveType,
+  startDate,
+  endDate,
+  totalDays,
+  approverName,
+}) {
+  const fmt = (d) =>
+    new Date(d).toLocaleDateString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
   const html = baseTemplate(`
     ${badge("Leave Approved", "green")}
     ${heading("Your Leave Has Been Approved ✅")}
     ${para(`Hi ${firstName}, your leave request has been approved.`)}
     ${infoTable([
-    ["Leave Type", leaveType],
-    ["From", fmt(startDate)] ,
-    ["To", fmt(endDate)],
-    ["Total Days", `${totalDays} day(s)`],
-    ["Approved By", approverName || "Management"],
-  ])}
+      ["Leave Type", leaveType],
+      ["From", fmt(startDate)],
+      ["To", fmt(endDate)],
+      ["Total Days", `${totalDays} day(s)`],
+      ["Approved By", approverName || "Management"],
+    ])}
     ${para("Have a restful time off. Remember to hand over any pending work before your leave.")}
     ${btn("View My Leaves", `${APP_URL}/leaves`)}
   `);
-  await sendEmail({ to: email, subject: `Leave Approved — ${totalDays} day(s) from ${fmt(startDate)}`, html });
+  await sendEmail({
+    to: email,
+    subject: `Leave Approved — ${totalDays} day(s) from ${fmt(startDate)}`,
+    html,
+  });
 }
 
-export async function sendLeaveRejected({ email, firstName, leaveType, startDate, endDate, totalDays, reason, approverName }) {
-  const fmt = (d) => new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+export async function sendLeaveRejected({
+  email,
+  firstName,
+  leaveType,
+  startDate,
+  endDate,
+  totalDays,
+  reason,
+  approverName,
+}) {
+  const fmt = (d) =>
+    new Date(d).toLocaleDateString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
   const html = baseTemplate(`
     ${badge("Leave Rejected", "red")}
     ${heading("Leave Request Not Approved")}
     ${para(`Hi ${firstName}, unfortunately your leave request could not be approved.`)}
     ${infoTable([
-    ["Leave Type", leaveType],
-    ["From", fmt(startDate)],
-    ["To", fmt(endDate)],
-    ["Total Days", `${totalDays} day(s)`],
-    ["Rejected By", approverName || "Management"],
-    ["Reason", reason],
-  ])}
+      ["Leave Type", leaveType],
+      ["From", fmt(startDate)],
+      ["To", fmt(endDate)],
+      ["Total Days", `${totalDays} day(s)`],
+      ["Rejected By", approverName || "Management"],
+      ["Reason", reason],
+    ])}
     ${para("If you have any questions, please speak to your manager or HR administrator.")}
     ${btn("View My Leaves", `${APP_URL}/leaves`)}
   `);
-  await sendEmail({ to: email, subject: `Leave Request Rejected — ${leaveType}`, html });
+  await sendEmail({
+    to: email,
+    subject: `Leave Request Rejected — ${leaveType}`,
+    html,
+  });
 }
 
-export async function sendLeaveRequest({ email, managerName, employeeName, leaveType, startDate, endDate, totalDays, reason }) {
-  const fmt = (d) => new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+export async function sendLeaveRequest({
+  email,
+  managerName,
+  employeeName,
+  leaveType,
+  startDate,
+  endDate,
+  totalDays,
+  reason,
+}) {
+  const fmt = (d) =>
+    new Date(d).toLocaleDateString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
   const html = baseTemplate(`
     ${badge("Action Required", "amber")}
     ${heading("New Leave Request 📋")}
     ${para(`Hi ${managerName || "Manager"}, a new leave request requires your review.`)}
     ${infoTable([
-    ["Employee", employeeName],
-    ["Leave Type", leaveType],
-    ["From", fmt(startDate)],
-    ["To", fmt(endDate)],
-    ["Total Days", `${totalDays} day(s)`],
-    ["Reason", reason || "—"],
-  ])}
+      ["Employee", employeeName],
+      ["Leave Type", leaveType],
+      ["From", fmt(startDate)],
+      ["To", fmt(endDate)],
+      ["Total Days", `${totalDays} day(s)`],
+      ["Reason", reason || "—"],
+    ])}
     ${para("Please review and take action on this request.")}
     ${btn("Review in Portal", `${APP_URL}/approvals`)}
   `);
-  await sendEmail({ to: email, subject: `Leave Request from ${employeeName} — ${totalDays} day(s)`, html });
+  await sendEmail({
+    to: email,
+    subject: `Leave Request from ${employeeName} — ${totalDays} day(s)`,
+    html,
+  });
 }
 
-export async function sendWfhApproved({ email, firstName, startDate, endDate, approverName }) {
-  const fmt = (d) => new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+export async function sendWfhApproved({
+  email,
+  firstName,
+  startDate,
+  endDate,
+  approverName,
+}) {
+  const fmt = (d) =>
+    new Date(d).toLocaleDateString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
   const html = baseTemplate(`
     ${badge("WFH Approved", "green")}
     ${heading("Work From Home Request Approved ✅")}
     ${para(`Hi ${firstName}, your WFH request has been approved.`)}
     ${infoTable([
-    ["From", fmt(startDate)],
-    ["To", fmt(endDate)],
-    ["Approved By", approverName || "Management"],
-  ])}
+      ["From", fmt(startDate)],
+      ["To", fmt(endDate)],
+      ["Approved By", approverName || "Management"],
+    ])}
     ${para("Please ensure you are reachable during working hours and attend all scheduled meetings.")}
     ${btn("View WFH Requests", `${APP_URL}/wfh`)}
   `);
-  await sendEmail({ to: email, subject: `WFH Approved — ${fmt(startDate)} to ${fmt(endDate)}`, html });
+  await sendEmail({
+    to: email,
+    subject: `WFH Approved — ${fmt(startDate)} to ${fmt(endDate)}`,
+    html,
+  });
 }
 
-export async function sendWfhRejected({ email, firstName, startDate, endDate, reason, approverName }) {
-  const fmt = (d) => new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+export async function sendWfhRejected({
+  email,
+  firstName,
+  startDate,
+  endDate,
+  reason,
+  approverName,
+}) {
+  const fmt = (d) =>
+    new Date(d).toLocaleDateString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
   const html = baseTemplate(`
     ${badge("WFH Rejected", "red")}
     ${heading("WFH Request Not Approved")}
     ${para(`Hi ${firstName}, your WFH request could not be approved.`)}
     ${infoTable([
-    ["From", fmt(startDate)],
-    ["To", fmt(endDate)],
-    ["Rejected By", approverName || "Management"],
-    ["Reason", reason],
-  ])}
+      ["From", fmt(startDate)],
+      ["To", fmt(endDate)],
+      ["Rejected By", approverName || "Management"],
+      ["Reason", reason],
+    ])}
     ${para("Please report to office as scheduled. Reach out to your manager if you need to discuss this.")}
     ${btn("View WFH Requests", `${APP_URL}/wfh`)}
   `);
   await sendEmail({ to: email, subject: `WFH Request Rejected`, html });
 }
 
-export async function sendReimbursementApproved({ email, firstName, title, totalAmount, approverName }) {
-  const fmt = (n) => `₹${Number(n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
+export async function sendReimbursementApproved({
+  email,
+  firstName,
+  title,
+  totalAmount,
+  approverName,
+}) {
+  const fmt = (n) =>
+    `₹${Number(n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
   const html = baseTemplate(`
     ${badge("Reimbursement Approved", "green")}
     ${heading("Reimbursement Claim Approved ✅")}
     ${para(`Hi ${firstName}, your reimbursement claim has been approved.`)}
     ${infoTable([
-    ["Claim Title", title],
-    ["Amount", `<strong style="color:#059669">${fmt(totalAmount)}</strong>`],
-    ["Approved By", approverName || "Management"],
-  ])}
+      ["Claim Title", title],
+      ["Amount", `<strong style="color:#059669">${fmt(totalAmount)}</strong>`],
+      ["Approved By", approverName || "Management"],
+    ])}
     ${para("The amount will be processed in the next payroll cycle or as per your company's reimbursement policy.")}
     ${btn("View Claims", `${APP_URL}/reimbursements`)}
   `);
-  await sendEmail({ to: email, subject: `Reimbursement Approved — ${title}`, html });
+  await sendEmail({
+    to: email,
+    subject: `Reimbursement Approved — ${title}`,
+    html,
+  });
 }
 
-export async function sendReimbursementRejected({ email, firstName, title, totalAmount, reason, approverName }) {
-  const fmt = (n) => `₹${Number(n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
+export async function sendReimbursementRejected({
+  email,
+  firstName,
+  title,
+  totalAmount,
+  reason,
+  approverName,
+}) {
+  const fmt = (n) =>
+    `₹${Number(n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
   const html = baseTemplate(`
     ${badge("Reimbursement Rejected", "red")}
     ${heading("Reimbursement Claim Rejected")}
     ${para(`Hi ${firstName}, your reimbursement claim could not be approved.`)}
     ${infoTable([
-    ["Claim Title", title],
-    ["Amount", fmt(totalAmount)],
-    ["Rejected By", approverName || "Management"],
-    ["Reason", reason],
-  ])}
+      ["Claim Title", title],
+      ["Amount", fmt(totalAmount)],
+      ["Rejected By", approverName || "Management"],
+      ["Reason", reason],
+    ])}
     ${para("If you believe this decision is incorrect, please contact your HR administrator.")}
     ${btn("View Claims", `${APP_URL}/reimbursements`)}
   `);
-  await sendEmail({ to: email, subject: `Reimbursement Rejected — ${title}`, html });
+  await sendEmail({
+    to: email,
+    subject: `Reimbursement Rejected — ${title}`,
+    html,
+  });
 }
 
-export async function sendPayslipReady({ email, firstName, month, year, grossSalary, netSalary }) {
-  const fmt = (n) => `₹${Number(n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
-  const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+export async function sendPayslipReady({
+  email,
+  firstName,
+  month,
+  year,
+  grossSalary,
+  netSalary,
+}) {
+  const fmt = (n) =>
+    `₹${Number(n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
+  const MONTHS = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+  ];
   const html = baseTemplate(`
     ${badge("Payslip Ready", "blue")}
     ${heading(`Your Payslip for ${MONTHS[month - 1]} ${year} is Ready 💰`)}
     ${para(`Hi ${firstName}, your payslip has been generated.`)}
     ${infoTable([
-    ["Pay Period", `${MONTHS[month - 1]} ${year}`],
-    ["Gross Salary", `<strong>${fmt(grossSalary)}</strong>`],
-    ["Net Salary", `<strong style="color:#059669">${fmt(netSalary)}</strong>`],
-  ])}
+      ["Pay Period", `${MONTHS[month - 1]} ${year}`],
+      ["Gross Salary", `<strong>${fmt(grossSalary)}</strong>`],
+      [
+        "Net Salary",
+        `<strong style="color:#059669">${fmt(netSalary)}</strong>`,
+      ],
+    ])}
     ${para("Log in to the portal to view and download your complete payslip.")}
     ${btn("View Payslip", `${APP_URL}/payroll`)}
   `);
-  await sendEmail({ to: email, subject: `Payslip Ready — ${MONTHS[month - 1]} ${year}`, html });
+  await sendEmail({
+    to: email,
+    subject: `Payslip Ready — ${MONTHS[month - 1]} ${year}`,
+    html,
+  });
 }
 
-export async function sendRegularizationApproved({ email, firstName, date, approverName }) {
-  const fmt = (d) => new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+export async function sendRegularizationApproved({
+  email,
+  firstName,
+  date,
+  approverName,
+}) {
+  const fmt = (d) =>
+    new Date(d).toLocaleDateString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
   const html = baseTemplate(`
     ${badge("Regularization Approved", "green")}
     ${heading("Attendance Regularization Approved ✅")}
     ${para(`Hi ${firstName}, your attendance regularization request has been approved.`)}
     ${infoTable([
-    ["Date", fmt(date)],
-    ["Approved By", approverName || "Management"],
-  ])}
+      ["Date", fmt(date)],
+      ["Approved By", approverName || "Management"],
+    ])}
     ${para("Your attendance record has been updated accordingly.")}
     ${btn("View Attendance", `${APP_URL}/attendance`)}
   `);
-  await sendEmail({ to: email, subject: `Attendance Regularization Approved — ${fmt(date)}`, html });
+  await sendEmail({
+    to: email,
+    subject: `Attendance Regularization Approved — ${fmt(date)}`,
+    html,
+  });
 }
 
-export async function sendRegularizationRejected({ email, firstName, date, reason, approverName }) {
-  const fmt = (d) => new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+export async function sendRegularizationRejected({
+  email,
+  firstName,
+  date,
+  reason,
+  approverName,
+}) {
+  const fmt = (d) =>
+    new Date(d).toLocaleDateString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
   const html = baseTemplate(`
     ${badge("Regularization Rejected", "red")}
     ${heading("Attendance Regularization Rejected")}
     ${para(`Hi ${firstName}, your attendance regularization request could not be approved.`)}
     ${infoTable([
-    ["Date", fmt(date)],
-    ["Rejected By", approverName || "Management"],
-    ["Reason", reason],
-  ])}
+      ["Date", fmt(date)],
+      ["Rejected By", approverName || "Management"],
+      ["Reason", reason],
+    ])}
     ${para("Contact HR if you have concerns about your attendance records.")}
     ${btn("View Attendance", `${APP_URL}/attendance`)}
   `);
-  await sendEmail({ to: email, subject: `Attendance Regularization Rejected`, html });
+  await sendEmail({
+    to: email,
+    subject: `Attendance Regularization Rejected`,
+    html,
+  });
 }
 
 export async function sendPasswordReset({ email, username, newPassword }) {
@@ -336,9 +526,12 @@ export async function sendPasswordReset({ email, username, newPassword }) {
     ${heading("Your Password Has Been Reset 🔑")}
     ${para(`Hi ${username}, your account password has been reset by an administrator.`)}
     ${infoTable([
-    ["Email", email],
-    ["New Password", `<code style="background:#f1f5f9;padding:2px 8px;border-radius:4px;font-family:monospace;">${newPassword}</code>`],
-  ])}
+      ["Email", email],
+      [
+        "New Password",
+        `<code style="background:#f1f5f9;padding:2px 8px;border-radius:4px;font-family:monospace;">${newPassword}</code>`,
+      ],
+    ])}
     ${para("Please log in and change your password immediately.")}
     ${btn("Log In Now", `${APP_URL}/login`)}
     ${divider()}
@@ -347,14 +540,37 @@ export async function sendPasswordReset({ email, username, newPassword }) {
   await sendEmail({ to: email, subject: `Password Reset — ${COMPANY}`, html });
 }
 
-export async function sendOrganisationWelcome({ email, firstName, orgName, loginEmail }) {
+export async function sendOrganisationWelcome({
+  email,
+  firstName,
+  orgName,
+  loginEmail,
+}) {
   const steps = [
-    ["1️⃣", "Configure your company settings", "Add your company address, PF/ESIC settings and financial year."],
-    ["2️⃣", "Add your employees", "Import employees via Excel or add them one by one."],
-    ["3️⃣", "Set up departments & designations", "Organise your workforce structure."],
-    ["4️⃣", "Configure leave types", "Set up annual leave, sick leave, and other leave policies."],
+    [
+      "1️⃣",
+      "Configure your company settings",
+      "Add your company address, PF/ESIC settings and financial year.",
+    ],
+    [
+      "2️⃣",
+      "Add your employees",
+      "Import employees via Excel or add them one by one.",
+    ],
+    [
+      "3️⃣",
+      "Set up departments & designations",
+      "Organise your workforce structure.",
+    ],
+    [
+      "4️⃣",
+      "Configure leave types",
+      "Set up annual leave, sick leave, and other leave policies.",
+    ],
   ];
-  const stepsHtml = steps.map(([icon, title, desc]) => `
+  const stepsHtml = steps
+    .map(
+      ([icon, title, desc]) => `
     <tr>
       <td style="padding:10px 0;vertical-align:top;">
         <table width="100%" cellpadding="0" cellspacing="0">
@@ -367,7 +583,9 @@ export async function sendOrganisationWelcome({ email, firstName, orgName, login
           </tr>
         </table>
       </td>
-    </tr>`).join("");
+    </tr>`,
+    )
+    .join("");
 
   const html = baseTemplate(`
     ${badge("Welcome!", "purple")}
@@ -385,7 +603,11 @@ export async function sendOrganisationWelcome({ email, firstName, orgName, login
       <tbody>${stepsHtml}</tbody>
     </table>
     ${divider()}
-    ${para('Need help? Reply to this email or visit our documentation. We\'re here to help!')}
+    ${para("Need help? Reply to this email or visit our documentation. We're here to help!")}
   `);
-  await sendEmail({ to: email, subject: `Welcome to ${COMPANY} — ${orgName} is live! 🎉`, html });
+  await sendEmail({
+    to: email,
+    subject: `Welcome to ${COMPANY} — ${orgName} is live! 🎉`,
+    html,
+  });
 }

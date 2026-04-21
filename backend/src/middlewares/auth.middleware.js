@@ -19,10 +19,17 @@ export const authenticate = async (req, res, next) => {
 
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
-      select: { id: true, email: true, role: true, isActive: true, organisationId: true },
+      select: {
+        id: true,
+        email: true,
+        role: true,
+        isActive: true,
+        organisationId: true,
+      },
     });
 
-    if (!user || !user.isActive) return unauthorized(res, "User not found or inactive");
+    if (!user || !user.isActive)
+      return unauthorized(res, "User not found or inactive");
 
     req.user = user;
     if (user.role === "PLATFORM_ADMIN") {
@@ -34,8 +41,10 @@ export const authenticate = async (req, res, next) => {
     }
     next();
   } catch (err) {
-    if (err.name === "TokenExpiredError") return unauthorized(res, "Token expired");
-    if (err.name === "JsonWebTokenError") return unauthorized(res, "Invalid token");
+    if (err.name === "TokenExpiredError")
+      return unauthorized(res, "Token expired");
+    if (err.name === "JsonWebTokenError")
+      return unauthorized(res, "Invalid token");
     return unauthorized(res, "Authentication failed");
   }
 };

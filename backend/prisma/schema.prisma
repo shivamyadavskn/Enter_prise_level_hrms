@@ -17,6 +17,7 @@ enum UserRole {
   MANAGER
   EMPLOYEE
   FINANCE
+  INTERN
 }
 
 enum EmploymentStatus {
@@ -124,6 +125,7 @@ model Organisation {
   leaveTypes      LeaveType[]
   holidays        Holiday[]
   onboardingTasks OnboardingTask[]
+  customRoles     CustomRole[]
 
   @@map("organisations")
 }
@@ -146,6 +148,7 @@ model User {
   uploadedDocs  Document[]     @relation("UploadedBy")
   refreshTokens RefreshToken[]
   auditLogs     AuditLog[]
+  payrollRevisions PayrollRevision[]
 
   @@map("users")
 }
@@ -187,6 +190,7 @@ model Employee {
   departmentId          Int?
   designationId         Int?
   managerId             Int?
+  customRoleId          Int?
   profilePicture        String?
   bankName              String?
   bankAccountNumber     String?
@@ -203,6 +207,7 @@ model Employee {
   manager           Employee?     @relation("ManagerSubordinates", fields: [managerId], references: [id])
   subordinates      Employee[]    @relation("ManagerSubordinates")
   headOfDepartments Department[]  @relation("DeptHead")
+  customRole        CustomRole?   @relation(fields: [customRoleId], references: [id])
 
   leaveBalances           LeaveBalance[]
   leaveApplications       LeaveApplication[]
@@ -228,6 +233,7 @@ model Employee {
   travelClaims            TravelClaim[]
   travelApprovals         TravelClaim[]              @relation("TravelApprover")
   pulseResponses          PulseSurveyResponse[]
+  payrollRevisions        PayrollRevision[]
 
   @@unique([organisationId, employeeCode])
   @@map("employees")
@@ -336,6 +342,30 @@ model Designation {
   employees    Employee[]
 
   @@map("designations")
+}
+
+// ─── Custom Roles (Dynamic, per-organisation) ─────────────────────────────────
+// Super Admins create these via the dashboard — no code change needed.
+// Each custom role has a base system role it inherits from, plus a JSON
+// permissions override map: { "module": ["action1", "action2"] }
+
+model CustomRole {
+  id             Int      @id @default(autoincrement())
+  organisationId Int
+  name           String
+  slug           String
+  description    String?
+  baseRole       UserRole @default(EMPLOYEE)
+  permissions    Json     @default("{}")
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organisation Organisation @relation(fields: [organisationId], references: [id])
+  employees    Employee[]
+
+  @@unique([organisationId, slug])
+  @@map("custom_roles")
 }
 
 model LeaveType {
@@ -788,6 +818,9 @@ model PayrollRevision {
   newValues      Json
   reason         String?
   createdAt      DateTime @default(now())
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [changedBy], references: [id], onDelete: Cascade)
 
   @@index([employeeId, createdAt])
   @@map("payroll_revisions")

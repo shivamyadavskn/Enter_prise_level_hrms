@@ -30,6 +30,7 @@ import announcementRoutes from "./modules/announcements/announcements.routes.js"
 import assetRoutes from "./modules/assets/assets.routes.js";
 import auditRoutes from "./modules/audit/audit.routes.js";
 import pulseRoutes from "./modules/pulse/pulse.routes.js";
+import customRoleRoutes from "./modules/custom-roles/custom-roles.routes.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -47,7 +48,7 @@ app.use(helmet());
 app.use(cors({
   origin: process.env.CORS_ORIGIN || "*",
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Org-Id"],
   credentials: true,
 }));
 
@@ -103,6 +104,7 @@ app.use("/api/announcements", announcementRoutes);
 app.use("/api/assets", assetRoutes);
 app.use("/api/audit-logs", auditRoutes);
 app.use("/api/pulse", pulseRoutes);
+app.use("/api/custom-roles", customRoleRoutes);
 
 // ── 404 Handler ───────────────────────────────────────────────────────────────
 app.use((req, res) => {
