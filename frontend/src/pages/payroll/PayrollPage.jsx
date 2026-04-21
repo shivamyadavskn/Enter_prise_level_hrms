@@ -545,6 +545,23 @@ export default function PayrollPage() {
                   <span><strong>{previewData.skipped.length}</strong> employee(s) skipped (no salary structure): {previewData.skipped.map(s => s.name).join(', ')}</span>
                 </div>
               )}
+              {/* Anomaly Alerts */}
+              {previewData.globalAnomalies?.length > 0 && (
+                <div className="mt-2 space-y-1.5">
+                  {previewData.globalAnomalies.map((a, i) => (
+                    <div key={i} className={`flex items-center gap-2 rounded-lg p-2.5 text-xs ${a.severity === 'high' ? 'bg-red-50 border border-red-200 text-red-700' : 'bg-amber-50 border border-amber-200 text-amber-700'}`}>
+                      <ExclamationTriangleIcon className="h-4 w-4 shrink-0" />
+                      <span>{a.message}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {previewData.totals?.anomalyCount > 0 && (
+                <div className="mt-2 flex items-center gap-2 rounded-lg bg-red-50 border border-red-200 p-2.5 text-xs text-red-700">
+                  <ExclamationTriangleIcon className="h-4 w-4 shrink-0" />
+                  <span><strong>{previewData.totals.anomalyCount}</strong> critical anomaly(ies) detected — review flagged employees below</span>
+                </div>
+              )}
             </div>
 
             {/* Preview Table */}
@@ -567,7 +584,25 @@ export default function PayrollPage() {
                     return (
                       <tr key={p.employeeId} className={`hover:bg-gray-50 ${isModified ? 'bg-amber-50/50' : ''} ${p.alreadyProcessed ? 'opacity-60' : ''}`}>
                         <td className="px-3 py-2.5 font-medium text-gray-900 whitespace-nowrap">
-                          {p.name}
+                          <div className="flex items-center gap-1.5">
+                            {p.name}
+                            {p.anomalies?.filter(a => a.severity === 'high').length > 0 && (
+                              <span className="relative group">
+                                <ExclamationTriangleIcon className="h-4 w-4 text-red-500" />
+                                <span className="absolute bottom-full left-0 mb-1 hidden group-hover:block z-20 w-52 rounded-lg bg-gray-900 text-white text-[11px] p-2 shadow-lg">
+                                  {p.anomalies.filter(a => a.severity === 'high').map(a => a.message).join(' · ')}
+                                </span>
+                              </span>
+                            )}
+                            {p.anomalies?.filter(a => a.severity === 'medium').length > 0 && !p.anomalies?.some(a => a.severity === 'high') && (
+                              <span className="relative group">
+                                <ExclamationTriangleIcon className="h-3.5 w-3.5 text-amber-500" />
+                                <span className="absolute bottom-full left-0 mb-1 hidden group-hover:block z-20 w-52 rounded-lg bg-gray-900 text-white text-[11px] p-2 shadow-lg">
+                                  {p.anomalies.filter(a => a.severity === 'medium').map(a => a.message).join(' · ')}
+                                </span>
+                              </span>
+                            )}
+                          </div>
                           <span className="block text-[11px] text-gray-400 font-normal">{p.employeeCode}</span>
                         </td>
                         <td className="px-3 py-2.5 text-gray-500 whitespace-nowrap">{p.department || '—'}</td>

@@ -234,6 +234,8 @@ model Employee {
   travelApprovals         TravelClaim[]              @relation("TravelApprover")
   pulseResponses          PulseSurveyResponse[]
   payrollRevisions        PayrollRevision[]
+  generatedLetters        GeneratedLetter[]
+  separation              Separation?
 
   @@unique([organisationId, employeeCode])
   @@map("employees")
@@ -909,4 +911,107 @@ model PulseSurveyResponse {
 
   @@unique([surveyId, employeeId, weekLabel])
   @@map("pulse_survey_responses")
+}
+
+// ─── Letter Generation ────────────────────────────────────────────────────────
+
+enum LetterCategory {
+  OFFER
+  APPOINTMENT
+  CONFIRMATION
+  SALARY_REVISION
+  EXPERIENCE
+  RELIEVING
+  WARNING
+  TERMINATION
+  INTERNSHIP
+  CUSTOM
+}
+
+model LetterTemplate {
+  id             Int            @id @default(autoincrement())
+  organisationId Int?
+  name           String
+  category       LetterCategory @default(CUSTOM)
+  subject        String?
+  body           String         @db.Text
+  variables      Json?
+  isDefault      Boolean        @default(false)
+  isActive       Boolean        @default(true)
+  createdBy      Int
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  generatedLetters GeneratedLetter[]
+
+  @@map("letter_templates")
+}
+
+model GeneratedLetter {
+  id           Int      @id @default(autoincrement())
+  templateId   Int
+  employeeId   Int
+  letterNumber String?
+  category     LetterCategory
+  subject      String?
+  body         String   @db.Text
+  metadata     Json?
+  generatedBy  Int
+  generatedAt  DateTime @default(now())
+
+  template LetterTemplate @relation(fields: [templateId], references: [id])
+  employee Employee       @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@map("generated_letters")
+}
+
+// ─── Employee Separation / Offboarding ────────────────────────────────────────
+
+enum SeparationType {
+  RESIGNATION
+  TERMINATION
+  RETIREMENT
+  ABSCONDING
+  CONTRACT_END
+  MUTUAL
+}
+
+enum SeparationStatus {
+  INITIATED
+  IN_PROGRESS
+  FNF_CALCULATED
+  FNF_APPROVED
+  COMPLETED
+  CANCELLED
+}
+
+model Separation {
+  id                 Int              @id @default(autoincrement())
+  employeeId         Int              @unique
+  organisationId     Int?
+  separationType     SeparationType
+  reason             String?
+  initiatedDate      DateTime         @default(now())
+  resignationDate    DateTime?        @db.Date
+  lastWorkingDate    DateTime?        @db.Date
+  noticePeriodDays   Int              @default(30)
+  noticePeriodServed Int              @default(0)
+  noticePeriodShortfall Int           @default(0)
+  exitInterviewDone  Boolean          @default(false)
+  exitFeedback       String?          @db.Text
+  fnfAmount          Float?
+  fnfBreakdown       Json?
+  assetRecoveryStatus String          @default("PENDING")
+  assetsToRecover    Json?
+  status             SeparationStatus @default(INITIATED)
+  completedDate      DateTime?
+  remarks            String?
+  initiatedBy        Int
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  employee Employee @relation(fields: [employeeId], references: [id])
+
+  @@index([organisationId, status])
+  @@map("separations")
 }

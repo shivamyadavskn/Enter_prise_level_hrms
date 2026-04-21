@@ -32,6 +32,9 @@ import AnnouncementsPage from './pages/announcements/AnnouncementsPage.jsx'
 import AssetsPage from './pages/assets/AssetsPage.jsx'
 import PulseSurveyPage from './pages/pulse/PulseSurveyPage.jsx'
 import AuditLogsPage from './pages/audit/AuditLogsPage.jsx'
+import LettersPage from './pages/letters/LettersPage.jsx'
+import CompliancePage from './pages/compliance/CompliancePage.jsx'
+import SeparationPage from './pages/separation/SeparationPage.jsx'
 
 function ProtectedRoute({ children }) {
   const { user, loading, activeOrg } = useAuth()
@@ -113,6 +116,9 @@ function AppRoutes() {
         <Route path="audit-logs" element={<AdminRoute><AuditLogsPage /></AdminRoute>} />
         <Route path="organisation" element={<AdminRoute><OrganisationSettingsPage /></AdminRoute>} />
         <Route path="roles" element={<AdminRoute><RolesPermissionsPage /></AdminRoute>} />
+        <Route path="letters" element={<AdminRoute><LettersPage /></AdminRoute>} />
+        <Route path="compliance" element={<FinanceRoute><CompliancePage /></FinanceRoute>} />
+        <Route path="separation" element={<AdminRoute><SeparationPage /></AdminRoute>} />
       </Route>
       <Route path="/platform" element={<PlatformRoute><PlatformLayout /></PlatformRoute>}>
         <Route index element={<PlatformDashboardPage />} />

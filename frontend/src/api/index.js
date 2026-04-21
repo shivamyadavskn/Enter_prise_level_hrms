@@ -257,3 +257,38 @@ export const auditApi = {
   getAll: (params) => api.get('/audit-logs', { params }),
   getModules: () => api.get('/audit-logs/modules'),
 }
+
+// ── Letters ──────────────────────────────────────────────────────────────────
+export const lettersApi = {
+  getTemplates: () => api.get('/letters/templates'),
+  getTemplateById: (id) => api.get(`/letters/templates/${id}`),
+  createTemplate: (data) => api.post('/letters/templates', data),
+  updateTemplate: (id, data) => api.put(`/letters/templates/${id}`, data),
+  deleteTemplate: (id) => api.delete(`/letters/templates/${id}`),
+  seedDefaults: () => api.post('/letters/templates/seed'),
+  getVariables: () => api.get('/letters/variables'),
+  preview: (data) => api.post('/letters/preview', data),
+  generate: (data) => api.post('/letters/generate', data),
+  bulkGenerate: (data) => api.post('/letters/bulk-generate', data),
+  getAll: (params) => api.get('/letters', { params }),
+  getById: (id) => api.get(`/letters/${id}`),
+  delete: (id) => api.delete(`/letters/${id}`),
+}
+
+// ── Compliance ───────────────────────────────────────────────────────────────
+export const complianceApi = {
+  getHealth: () => api.get('/compliance/health'),
+  getPfEcr: (params) => api.get('/compliance/pf-ecr', { params }),
+  getPtChallan: (params) => api.get('/compliance/pt-challan', { params }),
+  getBankFile: (params) => api.get('/compliance/bank-file', { params }),
+}
+
+// ── Separation / Offboarding ─────────────────────────────────────────────────
+export const separationApi = {
+  getAll: (params) => api.get('/separation', { params }),
+  getById: (id) => api.get(`/separation/${id}`),
+  initiate: (data) => api.post('/separation', data),
+  calculateFnF: (id) => api.post(`/separation/${id}/calculate-fnf`),
+  update: (id, data) => api.put(`/separation/${id}`, data),
+  cancel: (id, data) => api.patch(`/separation/${id}/cancel`, data),
+}

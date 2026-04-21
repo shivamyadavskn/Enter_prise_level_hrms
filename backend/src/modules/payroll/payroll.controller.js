@@ -307,6 +307,56 @@ export const previewPayroll = async (req, res) => {
         where: { employeeId_month_year: { employeeId: emp.id, month, year } },
       });
 
+      // ── Anomaly Detection ──────────────────────────────────────
+      const anomalies = [];
+
+      // 1. Zero attendance — forgot to mark?
+      if (payableDays === 0 && !emp.dateOfLeaving) {
+        anomalies.push({ type: "ZERO_ATTENDANCE", severity: "high", message: "0 payable days — no attendance or leave recorded" });
+      }
+
+      // 2. Very low attendance (< 40% of month)
+      if (payableDays > 0 && payableDays < totalDaysInMonth * 0.4 && !emp.dateOfLeaving) {
+        anomalies.push({ type: "LOW_ATTENDANCE", severity: "medium", message: `Only ${payableDays} of ${totalDaysInMonth} days — verify with employee` });
+      }
+
+      // 3. Salary spike vs last month
+      if (existing && existing.netSalary > 0) {
+        const change = ((netSalary - existing.netSalary) / existing.netSalary) * 100;
+        if (Math.abs(change) > 30) {
+          anomalies.push({ type: "SALARY_SPIKE", severity: "high", message: `Net pay ${change > 0 ? "increased" : "decreased"} by ${Math.abs(change).toFixed(0)}% vs last processed` });
+        }
+      }
+
+      // 4. Already processed this month
+      if (existing) {
+        anomalies.push({ type: "DUPLICATE", severity: "info", message: "Payroll already processed — will overwrite" });
+      }
+
+      // 5. Missing PAN (TDS compliance risk)
+      if (!emp.panNumber) {
+        anomalies.push({ type: "MISSING_PAN", severity: "medium", message: "PAN number missing — TDS at higher rate may apply" });
+      }
+
+      // 6. Probation employee
+      if (emp.employmentStatus === "PROBATION") {
+        anomalies.push({ type: "PROBATION", severity: "info", message: "Employee is on probation" });
+      }
+
+      // 7. New joiner (joined this month)
+      if (emp.dateOfJoining) {
+        const jd = new Date(emp.dateOfJoining);
+        if (jd >= start && jd <= end) {
+          const daysAfterJoin = totalDaysInMonth - jd.getDate() + 1;
+          anomalies.push({ type: "NEW_JOINER", severity: "info", message: `Joined on ${jd.getDate()}th — eligible for ${daysAfterJoin} days max` });
+        }
+      }
+
+      // 8. High LOP
+      if (unpaidLeaves > 5) {
+        anomalies.push({ type: "HIGH_LOP", severity: "medium", message: `${unpaidLeaves} unpaid leave days — significant salary impact` });
+      }
+
       preview.push({
         employeeId: emp.id,
         employeeCode: emp.employeeCode,
@@ -329,17 +379,24 @@ export const previewPayroll = async (req, res) => {
         netSalary,
         alreadyProcessed: !!existing,
         previousNetSalary: existing?.netSalary || null,
+        anomalies,
       });
     }
+
+    // Global anomalies
+    const globalAnomalies = [];
+    if (skipped.length > 0) globalAnomalies.push({ type: "MISSING_SALARY", severity: "high", message: `${skipped.length} employee(s) have no salary structure` });
+    if (preview.filter(p => p.payableDays === 0).length > 3) globalAnomalies.push({ type: "MASS_ZERO", severity: "high", message: "Multiple employees with 0 attendance — bulk attendance import may be needed" });
 
     const totals = {
       totalGross: preview.reduce((s, p) => s + p.grossSalary, 0),
       totalDeductions: preview.reduce((s, p) => s + p.totalDeductions, 0),
       totalNet: preview.reduce((s, p) => s + p.netSalary, 0),
       employeeCount: preview.length,
+      anomalyCount: preview.reduce((s, p) => s + p.anomalies.filter(a => a.severity === "high").length, 0),
     };
 
-    return R.success(res, { preview, skipped, totals, month, year, totalDaysInMonth });
+    return R.success(res, { preview, skipped, totals, month, year, totalDaysInMonth, globalAnomalies });
   } catch (err) {
     return R.error(res, err.message);
   }

@@ -31,6 +31,9 @@ import assetRoutes from "./modules/assets/assets.routes.js";
 import auditRoutes from "./modules/audit/audit.routes.js";
 import pulseRoutes from "./modules/pulse/pulse.routes.js";
 import customRoleRoutes from "./modules/custom-roles/custom-roles.routes.js";
+import letterRoutes from "./modules/letters/letters.routes.js";
+import complianceRoutes from "./modules/compliance/compliance.routes.js";
+import separationRoutes from "./modules/separation/separation.routes.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -105,6 +108,9 @@ app.use("/api/assets", assetRoutes);
 app.use("/api/audit-logs", auditRoutes);
 app.use("/api/pulse", pulseRoutes);
 app.use("/api/custom-roles", customRoleRoutes);
+app.use("/api/letters", letterRoutes);
+app.use("/api/compliance", complianceRoutes);
+app.use("/api/separation", separationRoutes);
 
 // ── 404 Handler ───────────────────────────────────────────────────────────────
 app.use((req, res) => {
