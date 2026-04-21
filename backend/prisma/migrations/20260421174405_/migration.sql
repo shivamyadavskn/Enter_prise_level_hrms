@@ -1,5 +1,5 @@
 -- CreateEnum
-CREATE TYPE "UserRole" AS ENUM ('PLATFORM_ADMIN', 'SUPER_ADMIN', 'ADMIN', 'HR', 'MANAGER', 'EMPLOYEE', 'FINANCE');
+CREATE TYPE "UserRole" AS ENUM ('PLATFORM_ADMIN', 'SUPER_ADMIN', 'ADMIN', 'HR', 'MANAGER', 'EMPLOYEE', 'FINANCE', 'INTERN');
 
 -- CreateEnum
 CREATE TYPE "EmploymentStatus" AS ENUM ('ACTIVE', 'PROBATION', 'RESIGNED', 'TERMINATED');
@@ -124,6 +124,7 @@ CREATE TABLE "employees" (
     "departmentId" INTEGER,
     "designationId" INTEGER,
     "managerId" INTEGER,
+    "customRoleId" INTEGER,
     "profilePicture" TEXT,
     "bankName" TEXT,
     "bankAccountNumber" TEXT,
@@ -226,6 +227,22 @@ CREATE TABLE "designations" (
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "designations_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "custom_roles" (
+    "id" SERIAL NOT NULL,
+    "organisationId" INTEGER NOT NULL,
+    "name" TEXT NOT NULL,
+    "slug" TEXT NOT NULL,
+    "description" TEXT,
+    "baseRole" "UserRole" NOT NULL DEFAULT 'EMPLOYEE',
+    "permissions" JSONB NOT NULL DEFAULT '{}',
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "custom_roles_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -686,6 +703,9 @@ CREATE UNIQUE INDEX "employee_onboarding_employeeId_taskId_key" ON "employee_onb
 CREATE UNIQUE INDEX "departments_organisationId_code_key" ON "departments"("organisationId", "code");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "custom_roles_organisationId_slug_key" ON "custom_roles"("organisationId", "slug");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "leave_types_organisationId_code_key" ON "leave_types"("organisationId", "code");
 
 -- CreateIndex
@@ -743,6 +763,9 @@ ALTER TABLE "employees" ADD CONSTRAINT "employees_designationId_fkey" FOREIGN KE
 ALTER TABLE "employees" ADD CONSTRAINT "employees_managerId_fkey" FOREIGN KEY ("managerId") REFERENCES "employees"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "employees" ADD CONSTRAINT "employees_customRoleId_fkey" FOREIGN KEY ("customRoleId") REFERENCES "custom_roles"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "onboarding_tasks" ADD CONSTRAINT "onboarding_tasks_organisationId_fkey" FOREIGN KEY ("organisationId") REFERENCES "organisations"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -765,6 +788,9 @@ ALTER TABLE "departments" ADD CONSTRAINT "departments_headId_fkey" FOREIGN KEY (
 
 -- AddForeignKey
 ALTER TABLE "designations" ADD CONSTRAINT "designations_organisationId_fkey" FOREIGN KEY ("organisationId") REFERENCES "organisations"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "custom_roles" ADD CONSTRAINT "custom_roles_organisationId_fkey" FOREIGN KEY ("organisationId") REFERENCES "organisations"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "leave_types" ADD CONSTRAINT "leave_types_organisationId_fkey" FOREIGN KEY ("organisationId") REFERENCES "organisations"("id") ON DELETE SET NULL ON UPDATE CASCADE;
@@ -852,6 +878,12 @@ ALTER TABLE "audit_logs" ADD CONSTRAINT "audit_logs_userId_fkey" FOREIGN KEY ("u
 
 -- AddForeignKey
 ALTER TABLE "payroll_adjustments" ADD CONSTRAINT "payroll_adjustments_payrollId_fkey" FOREIGN KEY ("payrollId") REFERENCES "payroll"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "payroll_revisions" ADD CONSTRAINT "payroll_revisions_employeeId_fkey" FOREIGN KEY ("employeeId") REFERENCES "employees"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "payroll_revisions" ADD CONSTRAINT "payroll_revisions_changedBy_fkey" FOREIGN KEY ("changedBy") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "travel_claims" ADD CONSTRAINT "travel_claims_employeeId_fkey" FOREIGN KEY ("employeeId") REFERENCES "employees"("id") ON DELETE CASCADE ON UPDATE CASCADE;
