@@ -90,14 +90,14 @@ function NavItem({ item, onClick }) {
         to={item.href}
         onClick={onClick}
         className={clsx(
-          'group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6',
+          'group flex gap-x-3 rounded-lg px-3 py-2 text-[13px] font-medium leading-6 transition-all duration-150',
           isActive
-            ? 'bg-primary-50 text-primary-600'
-            : 'text-gray-700 hover:bg-gray-50 hover:text-primary-600'
+            ? 'bg-primary-50 text-primary-700 shadow-sm ring-1 ring-primary-100'
+            : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
         )}
       >
         <item.icon
-          className={clsx('h-6 w-6 shrink-0', isActive ? 'text-primary-600' : 'text-gray-400 group-hover:text-primary-600')}
+          className={clsx('h-5 w-5 shrink-0 transition-colors', isActive ? 'text-primary-600' : 'text-gray-400 group-hover:text-gray-600')}
           aria-hidden="true"
         />
         {item.name}
@@ -119,24 +119,29 @@ function SidebarContent({ onClose }) {
     .filter((section) => section.items.length > 0)
 
   return (
-    <div className="flex grow flex-col gap-y-5 overflow-y-auto border-r border-gray-200 bg-white px-6 pb-4">
-      <div className="flex h-16 shrink-0 items-center gap-x-3">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-600">
-          <span className="text-xs font-bold text-white">HR</span>
+    <div className="flex grow flex-col overflow-y-auto bg-white border-r border-gray-200/80 scrollbar-thin">
+      {/* Brand Header */}
+      <div className="flex h-16 shrink-0 items-center gap-x-3 px-6 border-b border-gray-100">
+        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary-600 to-primary-700 shadow-sm">
+          <span className="text-sm font-extrabold text-white tracking-tight">HR</span>
         </div>
-        <span className="text-lg font-bold text-gray-900">HRMS</span>
+        <div className="flex flex-col">
+          <span className="text-base font-bold text-gray-900 tracking-tight">HRMS</span>
+          <span className="text-[10px] font-medium text-gray-400 uppercase tracking-widest -mt-0.5">Enterprise</span>
+        </div>
       </div>
 
-      <nav className="flex flex-1 flex-col">
-        <ul role="list" className="flex flex-1 flex-col gap-y-5">
+      {/* Navigation */}
+      <nav className="flex flex-1 flex-col px-4 pt-4 pb-3">
+        <ul role="list" className="flex flex-1 flex-col gap-y-6">
           {visibleSections.map((section, idx) => (
             <li key={section.label || `section-${idx}`}>
               {section.label && (
-                <p className="mb-1 px-2 text-xs font-semibold uppercase tracking-wider text-gray-400">
+                <p className="mb-2 px-3 text-[11px] font-semibold uppercase tracking-widest text-gray-400">
                   {section.label}
                 </p>
               )}
-              <ul role="list" className="-mx-2 space-y-1">
+              <ul role="list" className="space-y-0.5">
                 {section.items.map((item) => (
                   <NavItem key={item.name} item={item} onClick={onClose} />
                 ))}
@@ -144,19 +149,28 @@ function SidebarContent({ onClose }) {
             </li>
           ))}
 
-          <li className="-mx-6 mt-auto">
-            <button
-              onClick={logout}
-              className="flex w-full items-center gap-x-4 px-6 py-3 text-sm font-semibold text-gray-900 hover:bg-gray-50"
-            >
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-100 text-primary-700 font-semibold text-sm">
-                {user?.employee?.firstName?.[0] || user?.email?.[0]?.toUpperCase()}
-              </div>
-              <div className="flex flex-col items-start">
-                <span className="text-sm font-semibold">{user?.employee ? `${user.employee.firstName} ${user.employee.lastName || ''}` : user?.email}</span>
-                <span className="text-xs text-gray-500 capitalize">{user?.role?.toLowerCase().replace('_', ' ')}</span>
-              </div>
-            </button>
+          {/* User Profile Section */}
+          <li className="mt-auto -mx-4">
+            <div className="border-t border-gray-100 px-4 pt-3 pb-2">
+              <button
+                onClick={logout}
+                className="flex w-full items-center gap-x-3 rounded-xl px-3 py-2.5 hover:bg-gray-50 transition-colors group"
+              >
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary-500 to-primary-700 text-white font-semibold text-sm shadow-sm ring-2 ring-white">
+                  {user?.employee?.firstName?.[0] || user?.email?.[0]?.toUpperCase()}
+                </div>
+                <div className="flex flex-col items-start min-w-0 flex-1">
+                  <span className="text-sm font-semibold text-gray-900 truncate w-full text-left">
+                    {user?.employee ? `${user.employee.firstName} ${user.employee.lastName || ''}` : user?.email}
+                  </span>
+                  <span className="text-xs text-gray-400 capitalize">{user?.role?.toLowerCase().replace('_', ' ')}</span>
+                </div>
+                <svg className="h-4 w-4 text-gray-300 group-hover:text-gray-500 shrink-0 transition-colors" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M3 4.25A2.25 2.25 0 0 1 5.25 2h5.5A2.25 2.25 0 0 1 13 4.25v2a.75.75 0 0 1-1.5 0v-2a.75.75 0 0 0-.75-.75h-5.5a.75.75 0 0 0-.75.75v11.5c0 .414.336.75.75.75h5.5a.75.75 0 0 0 .75-.75v-2a.75.75 0 0 1 1.5 0v2A2.25 2.25 0 0 1 10.75 18h-5.5A2.25 2.25 0 0 1 3 15.75V4.25Z" clipRule="evenodd" />
+                  <path fillRule="evenodd" d="M19 10a.75.75 0 0 0-.75-.75H8.704l1.048-.943a.75.75 0 1 0-1.004-1.114l-2.5 2.25a.75.75 0 0 0 0 1.114l2.5 2.25a.75.75 0 1 0 1.004-1.114l-1.048-.943h9.546A.75.75 0 0 0 19 10Z" clipRule="evenodd" />
+                </svg>
+              </button>
+            </div>
           </li>
         </ul>
       </nav>

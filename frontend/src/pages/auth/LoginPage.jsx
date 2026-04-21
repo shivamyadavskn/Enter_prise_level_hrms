@@ -32,74 +32,89 @@ export default function LoginPage() {
       <div className="flex flex-1 flex-col justify-center px-4 py-12 sm:px-6 lg:flex-none lg:px-20 xl:px-24">
         <div className="mx-auto w-full max-w-sm lg:w-96">
           <div>
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-600">
-              <span className="text-lg font-bold text-white">HR</span>
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-primary-600 to-primary-700 shadow-lg shadow-primary-500/20">
+              <span className="text-lg font-extrabold text-white tracking-tight">HR</span>
             </div>
-            <h2 className="mt-8 text-2xl font-bold tracking-tight text-gray-900">Sign in to HRMS</h2>
-            <p className="mt-2 text-sm text-gray-500">Enterprise Human Resource Management System</p>
+            <h2 className="mt-8 text-2xl font-bold tracking-tight text-gray-900">Welcome back</h2>
+            <p className="mt-2 text-sm text-gray-500">Sign in to your HRMS Enterprise account</p>
           </div>
 
           <div className="mt-10">
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-5">
               {error && (
-                <div className="rounded-md bg-red-50 p-4 text-sm text-red-700">{error}</div>
+                <div className="flex items-center gap-2 rounded-lg bg-red-50 border border-red-100 p-3.5 text-sm text-red-700">
+                  <svg className="h-4 w-4 shrink-0 text-red-500" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clipRule="evenodd" /></svg>
+                  {error}
+                </div>
               )}
 
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-900">Email address</label>
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1.5">Email address</label>
                 <input
                   id="email" type="email" required autoComplete="email"
+                  placeholder="you@company.com"
                   value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })}
-                  className="mt-2 block w-full rounded-md border-0 py-1.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm"
+                  className="block w-full rounded-lg border-0 py-2.5 px-3.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-primary-500 sm:text-sm transition-shadow"
                 />
               </div>
 
               <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-900">Password</label>
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1.5">Password</label>
                 <input
                   id="password" type="password" required autoComplete="current-password"
+                  placeholder="Enter your password"
                   value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })}
-                  className="mt-2 block w-full rounded-md border-0 py-1.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm"
+                  className="block w-full rounded-lg border-0 py-2.5 px-3.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-primary-500 sm:text-sm transition-shadow"
                 />
               </div>
 
               <button
                 type="submit" disabled={loading}
-                className="flex w-full justify-center rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600 disabled:opacity-50"
+                className="flex w-full justify-center rounded-lg bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-primary-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600 disabled:opacity-50 transition-colors"
               >
-                {loading ? 'Signing in…' : 'Sign in'}
+                {loading ? (
+                  <span className="flex items-center gap-2">
+                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
+                    Signing in…
+                  </span>
+                ) : 'Sign in'}
               </button>
 
-              <p className="mt-4 text-center text-sm text-gray-500">
+              <p className="text-center text-sm text-gray-500">
                 New company?{' '}
                 <Link to="/register" className="font-semibold text-primary-600 hover:text-primary-500">Register for free</Link>
               </p>
             </form>
 
-            <div className="mt-4 text-center">
-              <Link to="/platform/setup" className="text-xs text-gray-400 hover:text-gray-500">
+            <div className="mt-3 text-center">
+              <Link to="/platform/setup" className="text-xs text-gray-400 hover:text-gray-500 transition-colors">
                 Platform admin setup →
               </Link>
             </div>
 
             <div className="mt-6">
-              <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">Demo Credentials</p>
-              <div className="grid grid-cols-1 gap-2">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="h-px flex-1 bg-gray-200" />
+                <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest">Demo Accounts</p>
+                <div className="h-px flex-1 bg-gray-200" />
+              </div>
+              <div className="grid grid-cols-1 gap-1.5">
                 {[
-                  { label: 'Super Admin', email: 'superadmin@hrms.com', password: 'SuperAdmin@123', color: 'red' },
-                  { label: 'HR Admin',    email: 'admin@hrms.com',       password: 'Admin@123',      color: 'indigo' },
-                  { label: 'Manager',     email: 'manager@hrms.com',     password: 'Manager@123',    color: 'purple' },
-                  { label: 'Finance',     email: 'finance@hrms.com',     password: 'Finance@123',    color: 'blue' },
-                  { label: 'Employee',    email: 'alice@hrms.com',       password: 'Employee@123',   color: 'green' },
+                  { label: 'Super Admin', email: 'superadmin@hrms.com', password: 'SuperAdmin@123', dot: 'bg-red-500' },
+                  { label: 'HR Admin',    email: 'admin@hrms.com',       password: 'Admin@123',      dot: 'bg-indigo-500' },
+                  { label: 'Manager',     email: 'manager@hrms.com',     password: 'Manager@123',    dot: 'bg-purple-500' },
+                  { label: 'Finance',     email: 'finance@hrms.com',     password: 'Finance@123',    dot: 'bg-blue-500' },
+                  { label: 'Employee',    email: 'alice@hrms.com',       password: 'Employee@123',   dot: 'bg-emerald-500' },
                 ].map((d) => (
                   <button
                     key={d.email}
                     type="button"
                     onClick={() => fillDemo(d.email, d.password)}
-                    className="flex items-center justify-between rounded-md border border-gray-200 px-3 py-2 text-xs hover:bg-gray-50 text-left"
+                    className="flex items-center gap-2.5 rounded-lg border border-gray-200 px-3 py-2 text-xs hover:bg-gray-50 hover:border-gray-300 text-left transition-colors group"
                   >
-                    <span className="font-medium text-gray-700">{d.label}</span>
-                    <span className="text-gray-400">{d.email}</span>
+                    <span className={`h-2 w-2 rounded-full ${d.dot} shrink-0`} />
+                    <span className="font-semibold text-gray-700 group-hover:text-gray-900">{d.label}</span>
+                    <span className="text-gray-400 ml-auto text-[11px]">{d.email}</span>
                   </button>
                 ))}
               </div>
