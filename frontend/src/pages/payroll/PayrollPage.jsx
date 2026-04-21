@@ -8,7 +8,7 @@ import Pagination from '../../components/common/Pagination.jsx'
 import EmptyState from '../../components/common/EmptyState.jsx'
 import { PageLoader } from '../../components/common/LoadingSpinner.jsx'
 import StatCard from '../../components/common/StatCard.jsx'
-import { BanknotesIcon, DocumentTextIcon, ArrowDownTrayIcon, ExclamationTriangleIcon, XMarkIcon } from '@heroicons/react/24/outline'
+import { BanknotesIcon, DocumentTextIcon, ArrowDownTrayIcon, ExclamationTriangleIcon, XMarkIcon, EyeIcon, CalendarDaysIcon, PencilSquareIcon } from '@heroicons/react/24/outline'
 import toast from 'react-hot-toast'
 
 function printPayslip(p) {
@@ -77,7 +77,8 @@ export default function PayrollPage() {
   const [page, setPage] = useState(1)
   const [month, setMonth] = useState(new Date().getMonth() + 1)
   const [year, setYear] = useState(new Date().getFullYear())
-  const [processModal, setProcessModal] = useState(false)
+  const [previewData, setPreviewData] = useState(null)
+  const [workingDaysOverride, setWorkingDaysOverride] = useState({})
   const [slipModal, setSlipModal] = useState(null)
   const [salaryModal, setSalaryModal] = useState(null)
   const [historyModal, setHistoryModal] = useState(null)
@@ -99,11 +100,22 @@ export default function PayrollPage() {
     enabled: isFinanceOrAdmin,
   })
 
+  const previewMut = useMutation({
+    mutationFn: payrollApi.preview,
+    onSuccess: (res) => {
+      const data = res.data?.data
+      setPreviewData(data)
+      setWorkingDaysOverride({})
+    },
+    onError: (err) => toast.error(err.response?.data?.message || 'Preview failed'),
+  })
+
   const processMut = useMutation({
     mutationFn: payrollApi.process,
     onSuccess: (res) => {
       qc.invalidateQueries(['payroll']); qc.invalidateQueries(['payroll-summary']); qc.invalidateQueries(['missing-salary'])
-      setProcessModal(false)
+      setPreviewData(null)
+      setWorkingDaysOverride({})
       const skipped = res.data?.data?.skipped || []
       if (skipped.length) {
         setSkippedResult(skipped)
@@ -265,8 +277,10 @@ export default function PayrollPage() {
               <select value={year} onChange={(e) => setYear(Number(e.target.value))} className="rounded-md border-0 py-1.5 pl-3 pr-8 ring-1 ring-inset ring-gray-300 sm:text-sm">
                 {[2024, 2025, 2026].map((y) => <option key={y} value={y}>{y}</option>)}
               </select>
-              <button onClick={() => setProcessModal(true)} className="rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white hover:bg-primary-500">
-                Process Payroll
+              <button onClick={() => previewMut.mutate({ month, year })} disabled={previewMut.isPending}
+                className="flex items-center gap-1.5 rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-700 disabled:opacity-50 transition-colors">
+                <EyeIcon className="h-4 w-4" />
+                {previewMut.isPending ? 'Loading Preview…' : 'Process Payroll'}
               </button>
             </>
           )}
@@ -482,19 +496,157 @@ export default function PayrollPage() {
         )}
       </div>
 
-      {/* Process Modal */}
-      <Modal open={processModal} onClose={() => setProcessModal(false)} title="Process Payroll" size="sm">
-        <div className="space-y-4">
-          <p className="text-sm text-gray-600">This will calculate payroll for all active employees for <strong>{MONTHS[month - 1]} {year}</strong>.</p>
-          <div className="flex justify-end gap-3">
-            <button onClick={() => setProcessModal(false)} className="rounded-md px-3 py-2 text-sm text-gray-700 ring-1 ring-inset ring-gray-300 hover:bg-gray-50">Cancel</button>
-            <button onClick={() => processMut.mutate({ month, year })} disabled={processMut.isPending}
-              className="rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white hover:bg-primary-500 disabled:opacity-50">
-              {processMut.isPending ? 'Processing…' : 'Process'}
-            </button>
+      {/* Payroll Preview & Confirm Modal */}
+      {previewData && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 backdrop-blur-sm p-4" onClick={() => setPreviewData(null)}>
+          <div className="w-full max-w-5xl rounded-2xl bg-white shadow-xl max-h-[92vh] flex flex-col animate-scale-in" onClick={e => e.stopPropagation()}>
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 shrink-0">
+              <div>
+                <h2 className="text-lg font-bold text-gray-900 tracking-tight">Payroll Preview — {MONTHS[previewData.month - 1]} {previewData.year}</h2>
+                <p className="text-sm text-gray-500 mt-0.5">Review and adjust before final processing</p>
+              </div>
+              <button onClick={() => setPreviewData(null)} className="rounded-lg p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors">
+                <XMarkIcon className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Summary Cards */}
+            <div className="px-6 py-4 border-b border-gray-100 shrink-0">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {(() => {
+                  const modified = previewData.preview.map(p => {
+                    if (workingDaysOverride[p.employeeId] !== undefined) {
+                      const days = Number(workingDaysOverride[p.employeeId])
+                      const gross = Math.round(p.perDaySalary * days)
+                      return { ...p, payableDays: days, grossSalary: gross, netSalary: Math.max(0, gross - p.totalDeductions) }
+                    }
+                    return p
+                  })
+                  const tg = modified.reduce((s, p) => s + p.grossSalary, 0)
+                  const td = modified.reduce((s, p) => s + p.totalDeductions, 0)
+                  const tn = modified.reduce((s, p) => s + p.netSalary, 0)
+                  return [
+                    { label: 'Employees', value: modified.length, bg: 'bg-blue-50 text-blue-700' },
+                    { label: 'Total Gross', value: `₹${tg.toLocaleString('en-IN')}`, bg: 'bg-emerald-50 text-emerald-700' },
+                    { label: 'Total Deductions', value: `₹${td.toLocaleString('en-IN')}`, bg: 'bg-red-50 text-red-700' },
+                    { label: 'Net Payable', value: `₹${tn.toLocaleString('en-IN')}`, bg: 'bg-primary-50 text-primary-700' },
+                  ].map(c => (
+                    <div key={c.label} className={`rounded-xl p-3.5 ${c.bg}`}>
+                      <p className="text-[11px] font-semibold uppercase tracking-wide opacity-70">{c.label}</p>
+                      <p className="text-lg font-bold mt-0.5">{c.value}</p>
+                    </div>
+                  ))
+                })()}
+              </div>
+              {previewData.skipped?.length > 0 && (
+                <div className="mt-3 flex items-center gap-2 rounded-lg bg-amber-50 border border-amber-200 p-2.5 text-xs text-amber-700">
+                  <ExclamationTriangleIcon className="h-4 w-4 shrink-0" />
+                  <span><strong>{previewData.skipped.length}</strong> employee(s) skipped (no salary structure): {previewData.skipped.map(s => s.name).join(', ')}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Preview Table */}
+            <div className="flex-1 overflow-auto px-6 py-4">
+              <table className="min-w-full text-sm">
+                <thead className="sticky top-0 bg-gray-50 z-10">
+                  <tr>
+                    {['Employee', 'Department', 'Total Days', 'Present', 'WFH', 'Leaves', 'LOP', 'Payable Days', 'Per Day', 'Gross', 'Deductions', 'Net Pay', 'Status'].map(h => (
+                      <th key={h} className="px-3 py-2.5 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {previewData.preview.map(p => {
+                    const overrideDays = workingDaysOverride[p.employeeId]
+                    const effectiveDays = overrideDays !== undefined ? Number(overrideDays) : p.payableDays
+                    const effectiveGross = overrideDays !== undefined ? Math.round(p.perDaySalary * effectiveDays) : p.grossSalary
+                    const effectiveNet = overrideDays !== undefined ? Math.max(0, effectiveGross - p.totalDeductions) : p.netSalary
+                    const isModified = overrideDays !== undefined && Number(overrideDays) !== p.payableDays
+                    return (
+                      <tr key={p.employeeId} className={`hover:bg-gray-50 ${isModified ? 'bg-amber-50/50' : ''} ${p.alreadyProcessed ? 'opacity-60' : ''}`}>
+                        <td className="px-3 py-2.5 font-medium text-gray-900 whitespace-nowrap">
+                          {p.name}
+                          <span className="block text-[11px] text-gray-400 font-normal">{p.employeeCode}</span>
+                        </td>
+                        <td className="px-3 py-2.5 text-gray-500 whitespace-nowrap">{p.department || '—'}</td>
+                        <td className="px-3 py-2.5 text-gray-600">{p.totalDaysInMonth}</td>
+                        <td className="px-3 py-2.5 text-emerald-600 font-medium">{p.presentDays}</td>
+                        <td className="px-3 py-2.5 text-purple-600">{p.wfhDays}</td>
+                        <td className="px-3 py-2.5 text-blue-600">{p.paidLeaves}</td>
+                        <td className="px-3 py-2.5 text-red-600">{p.unpaidLeaves}</td>
+                        <td className="px-3 py-2.5">
+                          <div className="flex items-center gap-1.5">
+                            <input
+                              type="number"
+                              min={0}
+                              max={p.totalDaysInMonth}
+                              step={0.5}
+                              value={overrideDays !== undefined ? overrideDays : p.payableDays}
+                              onChange={(e) => setWorkingDaysOverride(prev => ({ ...prev, [p.employeeId]: e.target.value }))}
+                              className={`w-16 rounded-md border-0 py-1 px-2 text-center text-sm font-semibold ring-1 ring-inset focus:ring-2 focus:ring-primary-500 ${isModified ? 'ring-amber-400 bg-amber-50 text-amber-700' : 'ring-gray-300 text-gray-900'}`}
+                            />
+                            {isModified && (
+                              <button onClick={() => setWorkingDaysOverride(prev => { const n = { ...prev }; delete n[p.employeeId]; return n })}
+                                className="text-amber-500 hover:text-amber-700" title="Reset to calculated">
+                                <XMarkIcon className="h-3.5 w-3.5" />
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-3 py-2.5 text-gray-500">₹{p.perDaySalary?.toLocaleString('en-IN')}</td>
+                        <td className="px-3 py-2.5 font-medium text-gray-900">₹{effectiveGross.toLocaleString('en-IN')}</td>
+                        <td className="px-3 py-2.5 text-red-600">-₹{p.totalDeductions?.toLocaleString('en-IN')}</td>
+                        <td className="px-3 py-2.5 font-bold text-emerald-700">₹{effectiveNet.toLocaleString('en-IN')}</td>
+                        <td className="px-3 py-2.5">
+                          {p.alreadyProcessed
+                            ? <span className="inline-flex items-center rounded-md bg-amber-50 px-1.5 py-0.5 text-[11px] font-medium text-amber-600 ring-1 ring-amber-200">Re-run</span>
+                            : <span className="inline-flex items-center rounded-md bg-emerald-50 px-1.5 py-0.5 text-[11px] font-medium text-emerald-600 ring-1 ring-emerald-200">New</span>
+                          }
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+              {previewData.preview.length === 0 && (
+                <p className="text-center text-gray-400 py-8">No employees with salary structure found for this period.</p>
+              )}
+            </div>
+
+            {/* Footer Actions */}
+            <div className="flex items-center justify-between px-6 py-4 border-t border-gray-100 bg-gray-50/50 shrink-0 rounded-b-2xl">
+              <div className="flex items-center gap-2 text-xs text-gray-500">
+                <PencilSquareIcon className="h-4 w-4" />
+                <span>Edit <strong>Payable Days</strong> column to override working days for any employee</span>
+              </div>
+              <div className="flex gap-3">
+                <button onClick={() => setPreviewData(null)} className="rounded-lg px-4 py-2.5 text-sm font-semibold text-gray-700 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 transition-colors">
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    const override = {}
+                    Object.entries(workingDaysOverride).forEach(([id, val]) => {
+                      const original = previewData.preview.find(p => p.employeeId === Number(id))
+                      if (original && Number(val) !== original.payableDays) {
+                        override[id] = Number(val)
+                      }
+                    })
+                    processMut.mutate({ month: previewData.month, year: previewData.year, workingDaysOverride: Object.keys(override).length > 0 ? override : undefined })
+                  }}
+                  disabled={processMut.isPending || previewData.preview.length === 0}
+                  className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 disabled:opacity-50 transition-colors"
+                >
+                  <BanknotesIcon className="h-4 w-4" />
+                  {processMut.isPending ? 'Processing…' : `Confirm & Process (${previewData.preview.length} employees)`}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
-      </Modal>
+      )}
 
       {/* Salary Structure Setup/Update Modal */}
       {salaryModal && (

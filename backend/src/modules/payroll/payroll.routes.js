@@ -1,7 +1,7 @@
 import { Router } from "express";
 import {
   getSalaryStructure, upsertSalaryStructure, updateSalaryStructure, getMissingSalaryStructures,
-  processPayroll, getPayrolls, getPayrollById, getMyPayslips,
+  previewPayroll, processPayroll, getPayrolls, getPayrollById, getMyPayslips,
   updatePaymentStatus, getPayrollSummary,
   addPayrollAdjustment, getPayrollAdjustments, bulkUpdatePaymentStatus, getPayrollForecast,
   getSalaryRevisions,
@@ -23,6 +23,7 @@ router.post("/salary-structure", authorize("SUPER_ADMIN", "ADMIN", "FINANCE"), v
 router.put("/salary-structure", authorize("SUPER_ADMIN", "ADMIN", "FINANCE"), validate(updateSalaryStructureSchema), updateSalaryStructure);
 router.get("/salary-structure/:employeeId/revisions", authorize("SUPER_ADMIN", "ADMIN", "FINANCE"), getSalaryRevisions);
 
+router.post("/preview", authorize("SUPER_ADMIN", "ADMIN", "FINANCE"), validate(processPayrollSchema), previewPayroll);
 router.post("/process", authorize("SUPER_ADMIN", "ADMIN", "FINANCE"), validate(processPayrollSchema), processPayroll);
 router.get("/", authorize("SUPER_ADMIN", "ADMIN", "FINANCE", "EMPLOYEE"), validateQuery(payrollQuerySchema), getPayrolls);
 router.get("/:id", getPayrollById);

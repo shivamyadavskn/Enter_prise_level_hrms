@@ -242,6 +242,109 @@ export const getSalaryRevisions = async (req, res) => {
   }
 };
 
+// ── Payroll Preview (dry-run — no writes) ────────────────────────────────────
+
+export const previewPayroll = async (req, res) => {
+  try {
+    const { month, year, employeeIds } = req.body;
+
+    const start = new Date(year, month - 1, 1);
+    const end = new Date(year, month, 0);
+    const totalDaysInMonth = end.getDate();
+
+    const whereEmp = {
+      employmentStatus: { in: ["ACTIVE", "PROBATION"] },
+      ...(req.organisationId ? { organisationId: req.organisationId } : {}),
+    };
+    if (employeeIds?.length) whereEmp.id = { in: employeeIds };
+
+    const employees = await prisma.employee.findMany({
+      where: whereEmp,
+      include: {
+        salaryStructures: { where: { isActive: true }, take: 1 },
+        department: { select: { name: true } },
+        designation: { select: { name: true } },
+      },
+    });
+
+    const preview = [];
+    const skipped = [];
+
+    for (const emp of employees) {
+      if (!emp.salaryStructures.length) {
+        skipped.push({ id: emp.id, name: `${emp.firstName} ${emp.lastName}`, employeeCode: emp.employeeCode, department: emp.department?.name });
+        continue;
+      }
+
+      const salary = emp.salaryStructures[0];
+
+      const attendance = await prisma.attendance.findMany({
+        where: { employeeId: emp.id, date: { gte: start, lte: end } },
+      });
+
+      const presentDays = attendance.filter((a) => a.status === "PRESENT").length;
+      const halfDays = attendance.filter((a) => a.status === "HALF_DAY").length;
+      const absentDays = attendance.filter((a) => a.status === "ABSENT").length;
+      const wfhDays = attendance.filter((a) => a.status === "WFH").length;
+      const leaveDays = attendance.filter((a) => a.status === "LEAVE").length;
+
+      const leaves = await prisma.leaveApplication.findMany({
+        where: { employeeId: emp.id, status: "APPROVED", startDate: { gte: start }, endDate: { lte: end } },
+        include: { leaveType: true },
+      });
+
+      const paidLeaves = leaves.filter((l) => l.leaveType.code !== "LOP").reduce((s, l) => s + l.totalDays, 0);
+      const unpaidLeaves = leaves.filter((l) => l.leaveType.code === "LOP").reduce((s, l) => s + l.totalDays, 0);
+
+      const payableDays = presentDays + (halfDays * 0.5) + wfhDays + paidLeaves;
+      const perDaySalary = salary.grossSalary / totalDaysInMonth;
+      const grossSalary = Math.round(perDaySalary * payableDays);
+      const totalDeductions = salary.totalDeductions;
+      const netSalary = Math.max(0, grossSalary - totalDeductions);
+
+      // Check if payroll already exists for this month
+      const existing = await prisma.payroll.findUnique({
+        where: { employeeId_month_year: { employeeId: emp.id, month, year } },
+      });
+
+      preview.push({
+        employeeId: emp.id,
+        employeeCode: emp.employeeCode,
+        name: `${emp.firstName} ${emp.lastName}`,
+        department: emp.department?.name,
+        designation: emp.designation?.name,
+        totalDaysInMonth,
+        presentDays,
+        halfDays,
+        absentDays,
+        wfhDays,
+        leaveDays,
+        paidLeaves,
+        unpaidLeaves,
+        payableDays,
+        perDaySalary: Math.round(perDaySalary),
+        monthlySalary: salary.grossSalary,
+        grossSalary,
+        totalDeductions,
+        netSalary,
+        alreadyProcessed: !!existing,
+        previousNetSalary: existing?.netSalary || null,
+      });
+    }
+
+    const totals = {
+      totalGross: preview.reduce((s, p) => s + p.grossSalary, 0),
+      totalDeductions: preview.reduce((s, p) => s + p.totalDeductions, 0),
+      totalNet: preview.reduce((s, p) => s + p.netSalary, 0),
+      employeeCount: preview.length,
+    };
+
+    return R.success(res, { preview, skipped, totals, month, year, totalDaysInMonth });
+  } catch (err) {
+    return R.error(res, err.message);
+  }
+};
+
 // ── Payroll Processing ────────────────────────────────────────────────────────
 
 export const processPayroll = async (req, res) => {

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { attendanceApi } from '../../api/index.js'
 import { useAuth } from '../../contexts/AuthContext.jsx'
@@ -7,9 +7,40 @@ import Modal from '../../components/common/Modal.jsx'
 import Pagination from '../../components/common/Pagination.jsx'
 import EmptyState from '../../components/common/EmptyState.jsx'
 import { PageLoader } from '../../components/common/LoadingSpinner.jsx'
-import { ClockIcon, CheckIcon, XMarkIcon, ArrowPathIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline'
+import { ClockIcon, CheckIcon, XMarkIcon, ArrowPathIcon, ExclamationTriangleIcon, MapPinIcon } from '@heroicons/react/24/outline'
 import toast from 'react-hot-toast'
 import { format } from 'date-fns'
+
+function LiveTimer({ clockIn }) {
+  const [elapsed, setElapsed] = useState('')
+  useEffect(() => {
+    if (!clockIn) return
+    const update = () => {
+      const diff = Date.now() - new Date(clockIn).getTime()
+      const h = Math.floor(diff / 3600000)
+      const m = Math.floor((diff % 3600000) / 60000)
+      const s = Math.floor((diff % 60000) / 1000)
+      setElapsed(`${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`)
+    }
+    update()
+    const id = setInterval(update, 1000)
+    return () => clearInterval(id)
+  }, [clockIn])
+  return <span className="tabular-nums">{elapsed}</span>
+}
+
+function ProgressRing({ pct, size = 56, stroke = 4, color = '#4f46e5' }) {
+  const r = (size - stroke) / 2
+  const c = 2 * Math.PI * r
+  const offset = c - (Math.min(pct, 100) / 100) * c
+  return (
+    <svg width={size} height={size} className="transform -rotate-90">
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#e5e7eb" strokeWidth={stroke} />
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth={stroke}
+        strokeDasharray={c} strokeDashoffset={offset} strokeLinecap="round" className="transition-all duration-700" />
+    </svg>
+  )
+}
 
 export default function AttendancePage() {
   const { user, isManager } = useAuth()
@@ -74,39 +105,89 @@ export default function AttendancePage() {
       </div>
 
       {/* Clock In/Out Card */}
-      <div className="rounded-lg bg-white shadow p-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm font-medium text-gray-500">Today — {format(new Date(), 'EEEE, dd MMM yyyy')}</p>
-            <div className="mt-2 flex items-center gap-4">
-              <div>
-                <p className="text-xs text-gray-500">Clock In</p>
-                <p className="text-lg font-semibold text-gray-900">{today?.clockIn ? format(new Date(today.clockIn), 'h:mm a') : '—'}</p>
+      <div className="rounded-2xl bg-white shadow-card border border-gray-100 overflow-hidden">
+        <div className="bg-gradient-to-r from-primary-600 to-primary-700 px-6 py-3">
+          <p className="text-sm font-medium text-white/80">{format(new Date(), 'EEEE, dd MMMM yyyy')}</p>
+        </div>
+        <div className="p-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-6">
+              {/* Progress Ring */}
+              <div className="relative flex-shrink-0">
+                {(() => {
+                  const hrs = today?.clockIn && !today?.clockOut
+                    ? (Date.now() - new Date(today.clockIn).getTime()) / 3600000
+                    : Number(today?.totalHours || 0)
+                  const pct = Math.min((hrs / 8) * 100, 100)
+                  const col = today?.clockOut ? '#10b981' : today?.clockIn ? '#4f46e5' : '#d1d5db'
+                  return (
+                    <>
+                      <ProgressRing pct={pct} size={64} stroke={5} color={col} />
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <span className="text-xs font-bold text-gray-700">{hrs.toFixed(1)}h</span>
+                      </div>
+                    </>
+                  )
+                })()}
               </div>
-              <div className="h-8 w-px bg-gray-200" />
-              <div>
-                <p className="text-xs text-gray-500">Clock Out</p>
-                <p className="text-lg font-semibold text-gray-900">{today?.clockOut ? format(new Date(today.clockOut), 'h:mm a') : '—'}</p>
-              </div>
-              <div className="h-8 w-px bg-gray-200" />
-              <div>
-                <p className="text-xs text-gray-500">Hours</p>
-                <p className="text-lg font-semibold text-gray-900">{today?.totalHours ? `${Number(today.totalHours).toFixed(1)}h` : '—'}</p>
+
+              {/* Time Slots */}
+              <div className="flex items-center gap-5">
+                <div className="text-center">
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400">Clock In</p>
+                  <p className="text-xl font-bold text-gray-900 mt-0.5">{today?.clockIn ? format(new Date(today.clockIn), 'h:mm a') : '—'}</p>
+                </div>
+                <div className="h-10 w-px bg-gray-200" />
+                <div className="text-center">
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400">Clock Out</p>
+                  <p className="text-xl font-bold text-gray-900 mt-0.5">{today?.clockOut ? format(new Date(today.clockOut), 'h:mm a') : '—'}</p>
+                </div>
+                <div className="h-10 w-px bg-gray-200" />
+                <div className="text-center">
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400">
+                    {today?.clockIn && !today?.clockOut ? 'Elapsed' : 'Total Hours'}
+                  </p>
+                  <p className="text-xl font-bold mt-0.5">
+                    {today?.clockIn && !today?.clockOut ? (
+                      <span className="text-primary-600"><LiveTimer clockIn={today.clockIn} /></span>
+                    ) : today?.totalHours ? (
+                      <span className="text-emerald-600">{Number(today.totalHours).toFixed(1)}h</span>
+                    ) : (
+                      <span className="text-gray-400">—</span>
+                    )}
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
-          <div className="flex gap-3">
-            {!today?.clockIn && (
-              <button onClick={() => clockInMut.mutate({})} disabled={clockInMut.isPending} className="flex items-center gap-2 rounded-md bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-500 disabled:opacity-50">
-                <ClockIcon className="h-4 w-4" /> Clock In
-              </button>
-            )}
-            {today?.clockIn && !today?.clockOut && (
-              <button onClick={() => clockOutMut.mutate({})} disabled={clockOutMut.isPending} className="flex items-center gap-2 rounded-md bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-500 disabled:opacity-50">
-                <ClockIcon className="h-4 w-4" /> Clock Out
-              </button>
-            )}
-            {today?.clockIn && today?.clockOut && <Badge status="PRESENT" label="Completed" />}
+
+            {/* Action Button */}
+            <div className="flex flex-col items-end gap-2">
+              {!today?.clockIn && !noProfile && (
+                <button onClick={() => clockInMut.mutate({})} disabled={clockInMut.isPending}
+                  className="flex items-center gap-2 rounded-xl bg-emerald-600 px-6 py-3 text-sm font-bold text-white shadow-sm hover:bg-emerald-700 hover:shadow-md disabled:opacity-50 transition-all">
+                  <ClockIcon className="h-5 w-5" />
+                  {clockInMut.isPending ? 'Clocking In…' : 'Clock In'}
+                </button>
+              )}
+              {today?.clockIn && !today?.clockOut && (
+                <button onClick={() => clockOutMut.mutate({})} disabled={clockOutMut.isPending}
+                  className="flex items-center gap-2 rounded-xl bg-red-600 px-6 py-3 text-sm font-bold text-white shadow-sm hover:bg-red-700 hover:shadow-md disabled:opacity-50 transition-all animate-pulse-slow">
+                  <ClockIcon className="h-5 w-5" />
+                  {clockOutMut.isPending ? 'Clocking Out…' : 'Clock Out'}
+                </button>
+              )}
+              {today?.clockIn && today?.clockOut && (
+                <div className="flex items-center gap-2 rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-2.5">
+                  <CheckIcon className="h-5 w-5 text-emerald-600" />
+                  <span className="text-sm font-semibold text-emerald-700">Day Complete</span>
+                </div>
+              )}
+              {today?.clockIn && (
+                <p className="text-[11px] text-gray-400">
+                  {today.locationIn && <><MapPinIcon className="inline h-3 w-3" /> {today.locationIn}</>}
+                </p>
+              )}
+            </div>
           </div>
         </div>
       </div>

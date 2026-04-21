@@ -119,6 +119,7 @@ export const payrollApi = {
   getById: (id) => api.get(`/payroll/${id}`),
   getMyPayslips: () => api.get('/payroll/my-payslips'),
   getSummary: (params) => api.get('/payroll/summary', { params }),
+  preview: (data) => api.post('/payroll/preview', data),
   process: (data) => api.post('/payroll/process', data),
   updateStatus: (id, data) => api.patch(`/payroll/${id}/payment-status`, data),
   getSalaryStructure: (empId) => api.get(`/payroll/salary-structure/${empId}`),
