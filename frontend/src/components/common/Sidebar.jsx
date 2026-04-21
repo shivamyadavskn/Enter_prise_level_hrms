@@ -8,7 +8,7 @@ import {
   DocumentTextIcon, BellIcon, PresentationChartLineIcon,
   FolderOpenIcon, SunIcon, DocumentDuplicateIcon,
   BriefcaseIcon, CheckCircleIcon, CurrencyDollarIcon, UserCircleIcon,
-  ClipboardDocumentListIcon, Cog8ToothIcon, ShieldCheckIcon,
+  ClipboardDocumentListIcon, Cog8ToothIcon, ShieldCheckIcon, MegaphoneIcon, CubeIcon, HeartIcon,
 } from '@heroicons/react/24/outline'
 import { useAuth } from '../../contexts/AuthContext.jsx'
 import clsx from 'clsx'
@@ -45,6 +45,7 @@ const navSections = [
       { name: 'Designations', href: '/designations', icon: BriefcaseIcon, roles: ['SUPER_ADMIN', 'ADMIN', 'HR'] },
       { name: 'Onboarding', href: '/onboarding', icon: ClipboardDocumentListIcon, roles: ['ALL'] },
       { name: 'Performance', href: '/performance', icon: ChartBarIcon, roles: ['ALL'] },
+      { name: 'Pulse Survey', href: '/pulse', icon: HeartIcon, roles: ['ALL'] },
     ],
   },
   {
@@ -56,9 +57,12 @@ const navSections = [
   {
     label: 'Organisation',
     items: [
+      { name: 'Announcements', href: '/announcements', icon: MegaphoneIcon, roles: ['ALL'] },
+      { name: 'Assets', href: '/assets', icon: CubeIcon, roles: ['SUPER_ADMIN', 'ADMIN'] },
       { name: 'Holidays', href: '/holidays', icon: SunIcon, roles: ['ALL'] },
       { name: 'HR Documents', href: '/documents/generate', icon: DocumentDuplicateIcon, roles: ['SUPER_ADMIN', 'ADMIN', 'HR', 'FINANCE'] },
       { name: 'Reports', href: '/reports', icon: PresentationChartLineIcon, roles: ['SUPER_ADMIN', 'ADMIN', 'HR', 'MANAGER', 'FINANCE'] },
+      { name: 'Audit Logs', href: '/audit-logs', icon: ShieldCheckIcon, roles: ['SUPER_ADMIN', 'ADMIN'] },
       { name: 'Settings', href: '/organisation', icon: Cog8ToothIcon, roles: ['SUPER_ADMIN', 'ADMIN'] },
       { name: 'Roles & Access', href: '/roles', icon: ShieldCheckIcon, roles: ['SUPER_ADMIN', 'ADMIN'] },
     ],

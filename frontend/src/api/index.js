@@ -219,3 +219,40 @@ export const customRolesApi = {
   assignToEmployee: (data) => api.post('/custom-roles/assign', data),
   getAvailablePermissions: () => api.get('/custom-roles/available-permissions'),
 }
+
+// ── Announcements ─────────────────────────────────────────────────────────────
+export const announcementsApi = {
+  getAll: (params) => api.get('/announcements', { params }),
+  getById: (id) => api.get(`/announcements/${id}`),
+  create: (data) => api.post('/announcements', data),
+  update: (id, data) => api.put(`/announcements/${id}`, data),
+  delete: (id) => api.delete(`/announcements/${id}`),
+}
+
+// ── Assets ────────────────────────────────────────────────────────────────────
+export const assetsApi = {
+  getAll: (params) => api.get('/assets', { params }),
+  getById: (id) => api.get(`/assets/${id}`),
+  getMy: () => api.get('/assets/my'),
+  getStats: () => api.get('/assets/stats'),
+  create: (data) => api.post('/assets', data),
+  update: (id, data) => api.put(`/assets/${id}`, data),
+  assign: (id, data) => api.patch(`/assets/${id}/assign`, data),
+  delete: (id) => api.delete(`/assets/${id}`),
+}
+
+// ── Pulse Survey ──────────────────────────────────────────────────────────────
+export const pulseApi = {
+  getAll: (params) => api.get('/pulse', { params }),
+  getMyHistory: () => api.get('/pulse/my-history'),
+  create: (data) => api.post('/pulse', data),
+  respond: (id, data) => api.post(`/pulse/${id}/respond`, data),
+  getResults: (id) => api.get(`/pulse/${id}/results`),
+  close: (id) => api.patch(`/pulse/${id}/close`),
+}
+
+// ── Audit Logs ────────────────────────────────────────────────────────────────
+export const auditApi = {
+  getAll: (params) => api.get('/audit-logs', { params }),
+  getModules: () => api.get('/audit-logs/modules'),
+}
