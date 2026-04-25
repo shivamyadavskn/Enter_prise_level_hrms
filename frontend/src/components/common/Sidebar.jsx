@@ -94,14 +94,14 @@ function NavItem({ item, onClick }) {
         to={item.href}
         onClick={onClick}
         className={clsx(
-          'group flex gap-x-3 rounded-lg px-3 py-2 text-[13px] font-medium leading-6 transition-all duration-150',
+          'group flex items-center gap-x-2.5 rounded-md px-2.5 py-1.5 text-xs font-medium tracking-tight transition-colors duration-150',
           isActive
-            ? 'bg-primary-50 text-primary-700 shadow-sm ring-1 ring-primary-100'
-            : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+            ? 'bg-primary-50 text-primary-700'
+            : 'text-ink-600 hover:bg-ink-50 hover:text-ink-900'
         )}
       >
         <item.icon
-          className={clsx('h-5 w-5 shrink-0 transition-colors', isActive ? 'text-primary-600' : 'text-gray-400 group-hover:text-gray-600')}
+          className={clsx('h-4 w-4 shrink-0 transition-colors', isActive ? 'text-primary-600' : 'text-ink-400 group-hover:text-ink-600')}
           aria-hidden="true"
         />
         {item.name}
@@ -123,25 +123,25 @@ function SidebarContent({ onClose }) {
     .filter((section) => section.items.length > 0)
 
   return (
-    <div className="flex grow flex-col overflow-y-auto bg-white border-r border-gray-200/80 scrollbar-thin">
+    <div className="flex grow flex-col overflow-y-auto bg-white border-r border-ink-200/70 scrollbar-thin">
       {/* Brand Header */}
-      <div className="flex h-16 shrink-0 items-center gap-x-3 px-6 border-b border-gray-100">
-        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary-600 to-primary-700 shadow-sm">
-          <span className="text-sm font-extrabold text-white tracking-tight">HR</span>
+      <div className="flex h-16 shrink-0 items-center gap-x-2.5 px-5 border-b border-ink-100">
+        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary-600 to-primary-700 shadow-sm">
+          <span className="text-xs font-bold text-white tracking-tight">P</span>
         </div>
         <div className="flex flex-col">
-          <span className="text-base font-bold text-gray-900 tracking-tight">HRMS</span>
-          <span className="text-[10px] font-medium text-gray-400 uppercase tracking-widest -mt-0.5">Enterprise</span>
+          <span className="font-display text-sm font-bold text-ink-900 tracking-tight">PeopleOS</span>
+          <span className="text-2xs font-semibold text-ink-400 uppercase tracking-widest -mt-0.5">HRMS</span>
         </div>
       </div>
 
       {/* Navigation */}
-      <nav className="flex flex-1 flex-col px-4 pt-4 pb-3">
-        <ul role="list" className="flex flex-1 flex-col gap-y-6">
+      <nav className="flex flex-1 flex-col px-3 pt-4 pb-3">
+        <ul role="list" className="flex flex-1 flex-col gap-y-5">
           {visibleSections.map((section, idx) => (
             <li key={section.label || `section-${idx}`}>
               {section.label && (
-                <p className="mb-2 px-3 text-[11px] font-semibold uppercase tracking-widest text-gray-400">
+                <p className="mb-1.5 px-2.5 text-2xs font-semibold uppercase tracking-widest text-ink-400">
                   {section.label}
                 </p>
               )}
@@ -154,22 +154,22 @@ function SidebarContent({ onClose }) {
           ))}
 
           {/* User Profile Section */}
-          <li className="mt-auto -mx-4">
-            <div className="border-t border-gray-100 px-4 pt-3 pb-2">
+          <li className="mt-auto -mx-3">
+            <div className="border-t border-ink-100 px-3 pt-2.5 pb-2">
               <button
                 onClick={logout}
-                className="flex w-full items-center gap-x-3 rounded-xl px-3 py-2.5 hover:bg-gray-50 transition-colors group"
+                className="flex w-full items-center gap-x-2.5 rounded-md px-2 py-2 hover:bg-ink-50 transition-colors group"
               >
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary-500 to-primary-700 text-white font-semibold text-sm shadow-sm ring-2 ring-white">
+                <div className="flex h-8 w-8 items-center justify-center rounded-md bg-gradient-to-br from-primary-500 to-primary-700 text-white font-semibold text-xs shadow-sm">
                   {user?.employee?.firstName?.[0] || user?.email?.[0]?.toUpperCase()}
                 </div>
                 <div className="flex flex-col items-start min-w-0 flex-1">
-                  <span className="text-sm font-semibold text-gray-900 truncate w-full text-left">
+                  <span className="text-xs font-semibold text-ink-900 truncate w-full text-left">
                     {user?.employee ? `${user.employee.firstName} ${user.employee.lastName || ''}` : user?.email}
                   </span>
-                  <span className="text-xs text-gray-400 capitalize">{user?.role?.toLowerCase().replace('_', ' ')}</span>
+                  <span className="text-2xs text-ink-400 capitalize">{user?.role?.toLowerCase().replace('_', ' ')}</span>
                 </div>
-                <svg className="h-4 w-4 text-gray-300 group-hover:text-gray-500 shrink-0 transition-colors" viewBox="0 0 20 20" fill="currentColor">
+                <svg className="h-3.5 w-3.5 text-ink-300 group-hover:text-ink-500 shrink-0 transition-colors" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M3 4.25A2.25 2.25 0 0 1 5.25 2h5.5A2.25 2.25 0 0 1 13 4.25v2a.75.75 0 0 1-1.5 0v-2a.75.75 0 0 0-.75-.75h-5.5a.75.75 0 0 0-.75.75v11.5c0 .414.336.75.75.75h5.5a.75.75 0 0 0 .75-.75v-2a.75.75 0 0 1 1.5 0v2A2.25 2.25 0 0 1 10.75 18h-5.5A2.25 2.25 0 0 1 3 15.75V4.25Z" clipRule="evenodd" />
                   <path fillRule="evenodd" d="M19 10a.75.75 0 0 0-.75-.75H8.704l1.048-.943a.75.75 0 1 0-1.004-1.114l-2.5 2.25a.75.75 0 0 0 0 1.114l2.5 2.25a.75.75 0 1 0 1.004-1.114l-1.048-.943h9.546A.75.75 0 0 0 19 10Z" clipRule="evenodd" />
                 </svg>
@@ -207,7 +207,7 @@ export default function Sidebar({ open, onClose }) {
       </Transition.Root>
 
       {/* Desktop */}
-      <div className="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-72 lg:flex-col">
+      <div className="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-64 lg:flex-col">
         <SidebarContent onClose={() => { }} />
       </div>
     </>

@@ -8,6 +8,8 @@ import { PageLoader } from '../../components/common/LoadingSpinner.jsx'
 import {
   UsersIcon, CalendarDaysIcon, ClockIcon, ComputerDesktopIcon,
   CheckCircleIcon, ExclamationCircleIcon, BanknotesIcon,
+  ArrowRightIcon, PlayIcon, StopIcon, ChevronRightIcon,
+  CurrencyDollarIcon, DocumentTextIcon, MegaphoneIcon,
 } from '@heroicons/react/24/outline'
 import { format } from 'date-fns'
 
@@ -18,17 +20,14 @@ export default function DashboardPage() {
     queryKey: ['dashboard-stats'],
     queryFn: () => reportsApi.getDashboard(),
   })
-
   const { data: todayAtt } = useQuery({
     queryKey: ['today-attendance'],
     queryFn: () => attendanceApi.getToday(),
   })
-
   const { data: leaveBalance } = useQuery({
     queryKey: ['leave-balance'],
     queryFn: () => leavesApi.getBalance({ year: new Date().getFullYear() }),
   })
-
   const { data: pendingLeaves } = useQuery({
     queryKey: ['pending-leaves'],
     queryFn: () => leavesApi.getAll({ status: 'PENDING', limit: 5 }),
@@ -42,141 +41,250 @@ export default function DashboardPage() {
 
   if (statsLoading) return <PageLoader />
 
-  const greeting = new Date().getHours() < 12 ? 'morning' : new Date().getHours() < 17 ? 'afternoon' : 'evening'
+  const hr = new Date().getHours()
+  const greeting = hr < 12 ? 'Good morning' : hr < 17 ? 'Good afternoon' : 'Good evening'
   const firstName = user?.employee?.firstName || user?.email?.split('@')[0]
+
+  // Clocked in but not out
+  const isClockedIn = today?.clockIn && !today?.clockOut
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Welcome Banner */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary-600 via-primary-700 to-indigo-800 p-6 lg:p-8 text-white">
-        <div className="absolute -top-12 -right-12 h-48 w-48 rounded-full bg-white/5" />
-        <div className="absolute -bottom-8 -left-8 h-32 w-32 rounded-full bg-white/5" />
-        <div className="relative z-10">
-          <p className="text-primary-200 text-sm font-medium">{format(new Date(), 'EEEE, MMMM d, yyyy')}</p>
-          <h1 className="mt-1 text-2xl lg:text-3xl font-bold tracking-tight">
-            Good {greeting}, {firstName}!
-          </h1>
-          <p className="mt-2 text-primary-200 text-sm max-w-lg">
-            Here's your daily overview. Stay on top of your tasks and team activities.
-          </p>
-        </div>
 
-        {/* Attendance Quick Action */}
-        <div className="relative z-10 mt-5 flex items-center gap-4 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 p-4">
-          <div className="flex-1">
-            <p className="text-sm font-medium text-white/70">Today's Status</p>
-            <div className="mt-1 flex items-center gap-3">
-              <Badge status={today?.status || 'NOT_MARKED'} label={today?.status || 'Not Marked'} />
-              {today?.clockIn && <span className="text-sm text-white/70">In: {format(new Date(today.clockIn), 'h:mm a')}</span>}
-              {today?.clockOut && <span className="text-sm text-white/70">Out: {format(new Date(today.clockOut), 'h:mm a')}</span>}
-            </div>
-          </div>
-          <Link to="/attendance" className="rounded-lg bg-white px-4 py-2.5 text-sm font-semibold text-primary-700 shadow-sm hover:bg-primary-50 transition-colors whitespace-nowrap">
-            {today?.clockIn && !today?.clockOut ? 'Clock Out' : !today?.clockIn ? 'Clock In' : 'View Attendance'}
+      {/* ─── Page Header ─────────────────────────────────────────── */}
+      <div className="page-header">
+        <div>
+          <p className="text-eyebrow mb-1.5">{format(new Date(), 'EEEE · MMMM d, yyyy')}</p>
+          <h1 className="page-title">{greeting}, {firstName}</h1>
+          <p className="page-subtitle">Here's what's happening across your organization today.</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Link to="/attendance" className="btn-secondary">
+            {isClockedIn ? <><StopIcon className="h-4 w-4 text-red-500" /> Clock Out</> : !today?.clockIn ? <><PlayIcon className="h-4 w-4 text-emerald-600" /> Clock In</> : <><ClockIcon className="h-4 w-4" /> Attendance</>}
           </Link>
+          {isAdmin() && (
+            <Link to="/employees/new" className="btn-primary">
+              <UsersIcon className="h-4 w-4" /> Add Employee
+            </Link>
+          )}
         </div>
       </div>
 
-      {/* Stats Grid */}
-      {isAdmin() && s && (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <StatCard title="Total Employees"    value={s.totalEmployees}  icon={UsersIcon}           color="blue"   />
-          <StatCard title="Present Today"      value={s.presentToday}    icon={CheckCircleIcon}     color="green"  />
-          <StatCard title="On Leave Today"     value={s.onLeaveToday}    icon={CalendarDaysIcon}    color="yellow" />
-          <StatCard title="WFH Today"          value={s.wfhToday}        icon={ComputerDesktopIcon} color="purple" />
-        </div>
-      )}
-
-      {isAdmin() && s && (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <StatCard title="Pending Leave Approvals"        value={s.pendingApprovals?.leave}           icon={CalendarDaysIcon}         color="yellow" />
-          <StatCard title="Pending WFH Approvals"         value={s.pendingApprovals?.wfh}             icon={ComputerDesktopIcon}      color="purple" />
-          <StatCard title="Pending Regularizations"       value={s.pendingApprovals?.regularizations} icon={ExclamationCircleIcon}    color="red"    />
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        {/* Leave Balance */}
-        <div className="rounded-xl bg-white border border-gray-100 shadow-card overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
-            <h2 className="text-base font-semibold text-gray-900">Leave Balance <span className="text-gray-400 font-normal">({new Date().getFullYear()})</span></h2>
-            <Link to="/leaves" className="text-sm font-medium text-primary-600 hover:text-primary-700 transition-colors">View all</Link>
+      {/* ─── Today's Status Strip ────────────────────────────────── */}
+      <div className="card flex flex-wrap items-center gap-x-6 gap-y-3 px-5 py-4">
+        <div className="flex items-center gap-3">
+          <div className={`relative flex h-2.5 w-2.5 ${isClockedIn ? '' : 'opacity-40'}`}>
+            {isClockedIn && <span className="absolute inset-0 rounded-full bg-emerald-400 animate-ping opacity-75" />}
+            <span className={`relative inline-flex rounded-full h-2.5 w-2.5 ${isClockedIn ? 'bg-emerald-500' : 'bg-ink-300'}`} />
           </div>
-          <div className="divide-y divide-gray-50">
+          <div>
+            <p className="text-2xs font-semibold uppercase tracking-wider text-ink-500">Status</p>
+            <p className="text-sm font-semibold text-ink-900">
+              {isClockedIn ? 'On the clock' : today?.clockOut ? 'Day complete' : 'Not clocked in'}
+            </p>
+          </div>
+        </div>
+        <div className="h-8 w-px bg-ink-200" />
+        <div>
+          <p className="text-2xs font-semibold uppercase tracking-wider text-ink-500">Clock In</p>
+          <p className="text-sm font-semibold text-ink-900 num-tabular">{today?.clockIn ? format(new Date(today.clockIn), 'h:mm a') : '—'}</p>
+        </div>
+        <div>
+          <p className="text-2xs font-semibold uppercase tracking-wider text-ink-500">Clock Out</p>
+          <p className="text-sm font-semibold text-ink-900 num-tabular">{today?.clockOut ? format(new Date(today.clockOut), 'h:mm a') : '—'}</p>
+        </div>
+        {today?.status && (
+          <>
+            <div className="h-8 w-px bg-ink-200" />
+            <div>
+              <p className="text-2xs font-semibold uppercase tracking-wider text-ink-500">Marked As</p>
+              <Badge status={today?.status} label={today?.status} />
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* ─── KPI Cards (Admin/Manager) ───────────────────────────── */}
+      {isAdmin() && s && (
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="page-section-title">Today at a glance</h2>
+            <Link to="/reports" className="text-xs font-semibold text-primary-600 hover:text-primary-700 flex items-center gap-1">
+              Detailed reports <ArrowRightIcon className="h-3.5 w-3.5" />
+            </Link>
+          </div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <StatCard title="Total Employees" value={s.totalEmployees}  icon={UsersIcon}           color="primary" />
+            <StatCard title="Present Today"   value={s.presentToday}    icon={CheckCircleIcon}     color="green" subtitle={`/ ${s.totalEmployees ?? 0}`} />
+            <StatCard title="On Leave"        value={s.onLeaveToday}    icon={CalendarDaysIcon}    color="yellow" />
+            <StatCard title="Working from Home" value={s.wfhToday}      icon={ComputerDesktopIcon} color="purple" />
+          </div>
+        </div>
+      )}
+
+      {/* ─── Pending Approvals ─────────────────────────────────── */}
+      {isAdmin() && s && (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <PendingTile label="Leave Approvals"      count={s.pendingApprovals?.leave}            to="/approvals" icon={CalendarDaysIcon}    color="yellow" />
+          <PendingTile label="WFH Requests"          count={s.pendingApprovals?.wfh}              to="/approvals" icon={ComputerDesktopIcon} color="purple" />
+          <PendingTile label="Regularizations"       count={s.pendingApprovals?.regularizations}  to="/approvals" icon={ExclamationCircleIcon} color="red" />
+        </div>
+      )}
+
+      {/* ─── Two-Column Layout ────────────────────────────────── */}
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+
+        {/* Leave Balance — col 1 */}
+        <div className="card overflow-hidden lg:col-span-1">
+          <div className="card-header">
+            <div>
+              <h3 className="card-header-title">Leave Balance</h3>
+              <p className="text-xs text-ink-500 mt-0.5">FY {new Date().getFullYear()}</p>
+            </div>
+            <Link to="/leaves" className="text-xs font-semibold text-primary-600 hover:text-primary-700 flex items-center gap-0.5">
+              View <ChevronRightIcon className="h-3.5 w-3.5" />
+            </Link>
+          </div>
+          <div className="divide-y divide-ink-100">
             {balances.length === 0 && (
-              <div className="px-6 py-8 text-center">
-                <CalendarDaysIcon className="h-8 w-8 text-gray-200 mx-auto mb-2" />
-                <p className="text-sm text-gray-400">No leave balance data</p>
+              <div className="px-5 py-12 text-center">
+                <CalendarDaysIcon className="h-8 w-8 text-ink-200 mx-auto mb-2" />
+                <p className="text-sm text-ink-400">No leave balance yet</p>
               </div>
             )}
-            {balances.map((b) => (
-              <div key={b.id} className="flex items-center justify-between px-6 py-3.5 hover:bg-gray-50/50 transition-colors">
-                <div>
-                  <p className="text-sm font-medium text-gray-900">{b.leaveType?.name}</p>
-                  <p className="text-xs text-gray-400 mt-0.5">{b.leaveType?.code}</p>
+            {balances.map((b) => {
+              const total = (b.openingBalance || 0) + (b.accrued || 0)
+              const pct = total > 0 ? Math.min(100, ((b.consumed || 0) / total) * 100) : 0
+              return (
+                <div key={b.id} className="px-5 py-3.5">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-ink-900 truncate">{b.leaveType?.name}</p>
+                      <p className="text-2xs uppercase tracking-wider text-ink-400">{b.leaveType?.code}</p>
+                    </div>
+                    <p className="text-sm font-semibold text-ink-900 num-tabular shrink-0">
+                      {b.available} <span className="text-xs font-normal text-ink-400">/ {total}</span>
+                    </p>
+                  </div>
+                  <div className="h-1 w-full bg-ink-100 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-primary-500 rounded-full transition-all duration-500"
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
                 </div>
-                <div className="text-right">
-                  <p className="text-sm font-bold text-gray-900">{b.available} <span className="font-normal text-gray-400 text-xs">days</span></p>
-                  <p className="text-xs text-gray-400">Used: {b.consumed}</p>
-                </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </div>
 
-        {/* Pending Approvals for Managers */}
-        {isManager() && (
-          <div className="rounded-xl bg-white border border-gray-100 shadow-card overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
-              <h2 className="text-base font-semibold text-gray-900">Pending Approvals</h2>
-              <Link to="/leaves?status=PENDING" className="text-sm font-medium text-primary-600 hover:text-primary-700 transition-colors">View all</Link>
+        {/* Pending Approvals — col 2 (managers) */}
+        {isManager() ? (
+          <div className="card overflow-hidden lg:col-span-2">
+            <div className="card-header">
+              <div>
+                <h3 className="card-header-title">Pending Approvals</h3>
+                <p className="text-xs text-ink-500 mt-0.5">Items waiting for your action</p>
+              </div>
+              <Link to="/approvals" className="text-xs font-semibold text-primary-600 hover:text-primary-700 flex items-center gap-0.5">
+                Review all <ChevronRightIcon className="h-3.5 w-3.5" />
+              </Link>
             </div>
-            <div className="divide-y divide-gray-50">
+            <div className="divide-y divide-ink-100">
               {pending.length === 0 && (
-                <div className="px-6 py-8 text-center">
-                  <CheckCircleIcon className="h-8 w-8 text-gray-200 mx-auto mb-2" />
-                  <p className="text-sm text-gray-400">All caught up!</p>
+                <div className="px-5 py-12 text-center">
+                  <CheckCircleIcon className="h-8 w-8 text-emerald-200 mx-auto mb-2" />
+                  <p className="text-sm font-medium text-ink-700">All caught up</p>
+                  <p className="text-xs text-ink-400 mt-0.5">No pending approvals.</p>
                 </div>
               )}
-              {pending.map?.((l) => (
-                <div key={l.id} className="flex items-center justify-between px-6 py-3.5 hover:bg-gray-50/50 transition-colors">
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">
-                      {l.employee?.firstName} {l.employee?.lastName}
-                    </p>
-                    <p className="text-xs text-gray-400 mt-0.5">{l.leaveType?.name} · {l.totalDays} days</p>
+              {pending.map((l) => (
+                <div key={l.id} className="flex items-center justify-between px-5 py-3.5 hover:bg-ink-50/60">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="h-9 w-9 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center text-xs font-bold shrink-0">
+                      {(l.employee?.firstName?.[0] || '?').toUpperCase()}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-ink-900 truncate">
+                        {l.employee?.firstName} {l.employee?.lastName}
+                      </p>
+                      <p className="text-xs text-ink-500 mt-0.5">
+                        {l.leaveType?.name} · <span className="num-tabular">{l.totalDays}</span> days
+                      </p>
+                    </div>
                   </div>
-                  <Badge status="PENDING" label="Pending" />
+                  <span className="badge-warning">Pending</span>
                 </div>
               ))}
             </div>
           </div>
-        )}
-
-        {/* Quick Links */}
-        {!isManager() && (
-          <div className="rounded-xl bg-white border border-gray-100 shadow-card overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-100">
-              <h2 className="text-base font-semibold text-gray-900">Quick Actions</h2>
+        ) : (
+          /* Quick Actions — col 2 (employees) */
+          <div className="card overflow-hidden lg:col-span-2">
+            <div className="card-header">
+              <h3 className="card-header-title">Quick Actions</h3>
             </div>
-            <div className="grid grid-cols-2 gap-3 p-5">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 p-4">
               {[
-                { label: 'Apply Leave',    to: '/leaves',     icon: CalendarDaysIcon,    bg: 'bg-blue-50 hover:bg-blue-100', iconColor: 'text-blue-600' },
-                { label: 'Request WFH',    to: '/wfh',        icon: ComputerDesktopIcon, bg: 'bg-purple-50 hover:bg-purple-100', iconColor: 'text-purple-600' },
-                { label: 'View Payslip',   to: '/payroll',    icon: BanknotesIcon,       bg: 'bg-emerald-50 hover:bg-emerald-100', iconColor: 'text-emerald-600' },
-                { label: 'My Attendance',  to: '/attendance', icon: ClockIcon,           bg: 'bg-amber-50 hover:bg-amber-100', iconColor: 'text-amber-600' },
-              ].map((a) => (
-                <Link key={a.label} to={a.to} className={`flex flex-col items-center gap-2.5 rounded-xl p-4 transition-all duration-150 ${a.bg}`}>
-                  <div className={`flex h-10 w-10 items-center justify-center rounded-lg bg-white shadow-sm ${a.iconColor}`}>
-                    <a.icon className="h-5 w-5" />
-                  </div>
-                  <span className="text-sm font-medium text-gray-700">{a.label}</span>
-                </Link>
-              ))}
+                { label: 'Apply Leave',     to: '/leaves',         icon: CalendarDaysIcon,    color: 'primary' },
+                { label: 'Request WFH',     to: '/wfh',            icon: ComputerDesktopIcon, color: 'purple' },
+                { label: 'View Payslip',    to: '/payroll',        icon: BanknotesIcon,       color: 'green' },
+                { label: 'Reimbursement',   to: '/reimbursements', icon: CurrencyDollarIcon,  color: 'yellow' },
+                { label: 'My Documents',    to: '/documents',      icon: DocumentTextIcon,    color: 'indigo' },
+                { label: 'Attendance',      to: '/attendance',     icon: ClockIcon,           color: 'red' },
+                { label: 'Announcements',   to: '/announcements',  icon: MegaphoneIcon,       color: 'slate' },
+                { label: 'Profile',         to: '/profile',        icon: UsersIcon,           color: 'blue' },
+              ].map((a) => {
+                const tints = {
+                  primary: 'bg-primary-50 text-primary-600',
+                  purple:  'bg-purple-50 text-purple-600',
+                  green:   'bg-emerald-50 text-emerald-600',
+                  yellow:  'bg-amber-50 text-amber-600',
+                  indigo:  'bg-indigo-50 text-indigo-600',
+                  red:     'bg-red-50 text-red-600',
+                  slate:   'bg-ink-100 text-ink-600',
+                  blue:    'bg-sky-50 text-sky-600',
+                }
+                return (
+                  <Link
+                    key={a.label}
+                    to={a.to}
+                    className="group flex flex-col items-center justify-center gap-2 rounded-lg border border-ink-200/70 bg-white p-3 hover:border-primary-200 hover:bg-primary-50/30 transition-all"
+                  >
+                    <div className={`flex h-9 w-9 items-center justify-center rounded-md ${tints[a.color]}`}>
+                      <a.icon className="h-4.5 w-4.5" />
+                    </div>
+                    <span className="text-xs font-semibold text-ink-700 text-center group-hover:text-primary-700">{a.label}</span>
+                  </Link>
+                )
+              })}
             </div>
           </div>
         )}
       </div>
     </div>
+  )
+}
+
+/* ─── Sub-component ─────────────────────────────────────────── */
+function PendingTile({ label, count, to, icon: Icon, color }) {
+  const tints = {
+    yellow: 'bg-amber-50 text-amber-700 ring-amber-200',
+    purple: 'bg-purple-50 text-purple-700 ring-purple-200',
+    red:    'bg-red-50 text-red-700 ring-red-200',
+  }
+  return (
+    <Link to={to} className="group card-hover p-4 flex items-center gap-3">
+      <div className={`h-10 w-10 rounded-lg flex items-center justify-center ring-1 ring-inset ${tints[color] || tints.yellow}`}>
+        <Icon className="h-5 w-5" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-2xs uppercase tracking-wider font-semibold text-ink-500">{label}</p>
+        <p className="font-display text-2xl font-semibold tracking-tight text-ink-900 num-tabular leading-none mt-1">
+          {count ?? 0}
+        </p>
+      </div>
+      <ChevronRightIcon className="h-4 w-4 text-ink-300 group-hover:text-ink-500 group-hover:translate-x-0.5 transition-all" />
+    </Link>
   )
 }
