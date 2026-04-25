@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Allow: /welcome
+Disallow: /api/
+Disallow: /platform/
+
+Sitemap: https://your-domain.com/sitemap.xml

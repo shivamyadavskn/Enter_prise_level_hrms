@@ -35,11 +35,12 @@ import AuditLogsPage from './pages/audit/AuditLogsPage.jsx'
 import LettersPage from './pages/letters/LettersPage.jsx'
 import CompliancePage from './pages/compliance/CompliancePage.jsx'
 import SeparationPage from './pages/separation/SeparationPage.jsx'
+import LandingPage from './pages/landing/LandingPage.jsx'
 
 function ProtectedRoute({ children }) {
   const { user, loading, activeOrg } = useAuth()
   if (loading) return <div className="flex h-screen items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-4 border-primary-600 border-t-transparent" /></div>
-  if (!user) return <Navigate to="/login" replace />
+  if (!user) return <Navigate to="/welcome" replace />
   if (user.role === 'PLATFORM_ADMIN' && !activeOrg) return <Navigate to="/platform" replace />
   return children
 }
@@ -86,6 +87,7 @@ function PublicRoute({ children }) {
 function AppRoutes() {
   return (
     <Routes>
+      <Route path="/welcome" element={<LandingPage />} />
       <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
       <Route path="/register" element={<PublicRoute><RegisterPage /></PublicRoute>} />
       <Route path="/platform/setup" element={<PublicRoute><PlatformSetupPage /></PublicRoute>} />
