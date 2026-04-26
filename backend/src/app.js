@@ -34,8 +34,10 @@ import customRoleRoutes from "./modules/custom-roles/custom-roles.routes.js";
 import letterRoutes from "./modules/letters/letters.routes.js";
 import complianceRoutes from "./modules/compliance/compliance.routes.js";
 import separationRoutes from "./modules/separation/separation.routes.js";
+import exportRoutes from "./modules/exports/exports.routes.js";
 import { authenticate } from "./middlewares/auth.middleware.js";
 import { requestId } from "./middlewares/requestId.middleware.js";
+import { notFoundHandler, globalErrorHandler } from "./middlewares/errorHandler.middleware.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -165,25 +167,10 @@ app.use("/api/custom-roles", customRoleRoutes);
 app.use("/api/letters", letterRoutes);
 app.use("/api/compliance", complianceRoutes);
 app.use("/api/separation", separationRoutes);
+app.use("/api/exports", exportRoutes);
 
-// ── 404 Handler ───────────────────────────────────────────────────────────────
-app.use((req, res) => {
-  res.status(404).json({ success: false, message: `Route ${req.method} ${req.originalUrl} not found` });
-});
-
-// ── Global Error Handler ──────────────────────────────────────────────────────
-app.use((err, req, res, next) => {
-  console.error("Unhandled error:", err);
-
-  if (err.code === "LIMIT_FILE_SIZE") {
-    return res.status(400).json({ success: false, message: "File size exceeds 10MB limit" });
-  }
-
-  res.status(err.status || 500).json({
-    success: false,
-    message: process.env.NODE_ENV === "production" ? "Internal server error" : err.message,
-    ...(process.env.NODE_ENV !== "production" && { stack: err.stack }),
-  });
-});
+// ── 404 + Global Error Handler ────────────────────────────────────────────────
+app.use(notFoundHandler);
+app.use(globalErrorHandler);
 
 export default app;

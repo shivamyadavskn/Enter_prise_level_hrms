@@ -288,6 +288,32 @@ export const complianceApi = {
   getBankFile: (params) => api.get('/compliance/bank-file', { params }),
 }
 
+// ── Exports (PDF + Excel) ─────────────────────────────────────────────────────
+// All return blobs; use the downloadBlob helper to trigger a browser save.
+export const exportsApi = {
+  payslipPdf:       (payrollId)    => api.get(`/exports/payslip/${payrollId}`,    { responseType: 'blob' }),
+  employeesXlsx:    ()             => api.get('/exports/employees.xlsx',          { responseType: 'blob' }),
+  attendanceXlsx:   (params)       => api.get('/exports/attendance.xlsx',         { params, responseType: 'blob' }),
+  payrollXlsx:      (params)       => api.get('/exports/payroll.xlsx',            { params, responseType: 'blob' }),
+  leavesXlsx:       (params)       => api.get('/exports/leaves.xlsx',             { params, responseType: 'blob' }),
+}
+
+/** Downloads a blob response with a sensible filename. */
+export function downloadBlob(response, fallbackName = 'download') {
+  const blob = response.data
+  const cd = response.headers?.['content-disposition'] || ''
+  const match = /filename="?([^"]+)"?/i.exec(cd)
+  const filename = match?.[1] || fallbackName
+  const url = window.URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  setTimeout(() => window.URL.revokeObjectURL(url), 100)
+}
+
 // ── Separation / Offboarding ─────────────────────────────────────────────────
 export const separationApi = {
   getAll: (params) => api.get('/separation', { params }),

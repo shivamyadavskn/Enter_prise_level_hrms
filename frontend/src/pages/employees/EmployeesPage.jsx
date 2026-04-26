@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
-import { employeesApi, departmentsApi } from '../../api/index.js'
+import { employeesApi, departmentsApi, exportsApi } from '../../api/index.js'
+import ExportButton from '../../components/common/ExportButton.jsx'
 import Badge from '../../components/common/Badge.jsx'
 import Pagination from '../../components/common/Pagination.jsx'
 import { PageLoader } from '../../components/common/LoadingSpinner.jsx'
@@ -44,6 +45,11 @@ export default function EmployeesPage() {
         </div>
         {isAdmin() && (
           <div className="flex gap-2">
+            <ExportButton
+              label="Export Excel"
+              fallbackName="employees.xlsx"
+              onExport={() => exportsApi.employeesXlsx()}
+            />
             <button onClick={() => setImportModal(true)} className="inline-flex items-center gap-x-2 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">
               <ArrowUpTrayIcon className="h-4 w-4" /> Import Excel
             </button>

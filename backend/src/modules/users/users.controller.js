@@ -169,6 +169,9 @@ export const deleteUser = async (req, res) => {
       return R.forbidden(res, "Access denied");
     }
 
+    // SECURITY: revoke all refresh tokens before deleting (defense in depth
+    // — cascade should handle this but be explicit so audit logs are clean).
+    await prisma.refreshToken.deleteMany({ where: { userId: id } });
     await prisma.user.delete({ where: { id } });
     return R.success(res, null, "User deleted successfully");
   } catch (err) {
@@ -194,6 +197,11 @@ export const toggleUserActive = async (req, res) => {
       data: { isActive: !user.isActive },
       select: userSelect,
     });
+
+    // SECURITY: when deactivating, revoke all sessions immediately.
+    if (!updated.isActive) {
+      await prisma.refreshToken.deleteMany({ where: { userId: id } });
+    }
 
     return R.success(res, updated, `User ${updated.isActive ? "activated" : "deactivated"} successfully`);
   } catch (err) {

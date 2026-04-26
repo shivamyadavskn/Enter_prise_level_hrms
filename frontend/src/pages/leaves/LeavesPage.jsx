@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { leavesApi, employeesApi } from '../../api/index.js'
+import { leavesApi, employeesApi, exportsApi } from '../../api/index.js'
+import ExportButton from '../../components/common/ExportButton.jsx'
 import { useAuth } from '../../contexts/AuthContext.jsx'
 import Badge from '../../components/common/Badge.jsx'
 import Modal from '../../components/common/Modal.jsx'
@@ -187,6 +188,13 @@ export default function LeavesPage() {
           <p className="text-sm text-gray-500">{isAdmin() || isManager() ? 'Manage leave applications across the organisation' : 'Apply for leave and track your balances'}</p>
         </div>
         <div className="flex gap-2">
+          {(isAdmin() || isManager()) && (
+            <ExportButton
+              label="Export"
+              fallbackName="leaves.xlsx"
+              onExport={() => exportsApi.leavesXlsx({ status: statusFilter || undefined })}
+            />
+          )}
           {isAdmin() && (
             <>
               <button onClick={() => setAdjModal(true)} className="inline-flex items-center gap-2 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">

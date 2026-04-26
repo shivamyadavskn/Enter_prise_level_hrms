@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { attendanceApi } from '../../api/index.js'
+import { attendanceApi, exportsApi } from '../../api/index.js'
+import ExportButton from '../../components/common/ExportButton.jsx'
 import { useAuth } from '../../contexts/AuthContext.jsx'
 import Badge from '../../components/common/Badge.jsx'
 import Modal from '../../components/common/Modal.jsx'
@@ -43,7 +44,7 @@ function ProgressRing({ pct, size = 56, stroke = 4, color = '#4f46e5' }) {
 }
 
 export default function AttendancePage() {
-  const { user, isManager } = useAuth()
+  const { user, isAdmin } = useAuth()
   const qc = useQueryClient()
   const [page, setPage] = useState(1)
   const [month, setMonth] = useState(new Date().getMonth() + 1)
@@ -101,6 +102,16 @@ export default function AttendancePage() {
           <select value={year} onChange={(e) => setYear(Number(e.target.value))} className="rounded-md border-0 py-1.5 pl-3 pr-8 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-primary-600 sm:text-sm">
             {[2024, 2025, 2026].map((y) => <option key={y} value={y}>{y}</option>)}
           </select>
+          {isAdmin?.() && (
+            <ExportButton
+              label="Export"
+              fallbackName={`attendance_${year}_${month}.xlsx`}
+              onExport={() => exportsApi.attendanceXlsx({
+                from: `${year}-${String(month).padStart(2,'0')}-01`,
+                to:   `${year}-${String(month).padStart(2,'0')}-31`,
+              })}
+            />
+          )}
         </div>
       </div>
 

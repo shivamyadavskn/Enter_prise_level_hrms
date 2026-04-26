@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { payrollApi } from '../../api/index.js'
+import { payrollApi, exportsApi, downloadBlob } from '../../api/index.js'
+import ExportButton from '../../components/common/ExportButton.jsx'
 import { useAuth } from '../../contexts/AuthContext.jsx'
 import Badge from '../../components/common/Badge.jsx'
 import Modal from '../../components/common/Modal.jsx'
@@ -277,6 +278,11 @@ export default function PayrollPage() {
               <select value={year} onChange={(e) => setYear(Number(e.target.value))} className="rounded-md border-0 py-1.5 pl-3 pr-8 ring-1 ring-inset ring-gray-300 sm:text-sm">
                 {[2024, 2025, 2026].map((y) => <option key={y} value={y}>{y}</option>)}
               </select>
+              <ExportButton
+                label="Export Excel"
+                fallbackName={`payroll_${year}_${String(month).padStart(2,'0')}.xlsx`}
+                onExport={() => exportsApi.payrollXlsx({ month, year })}
+              />
               <button onClick={() => previewMut.mutate({ month, year })} disabled={previewMut.isPending}
                 className="flex items-center gap-1.5 rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-700 disabled:opacity-50 transition-colors">
                 <EyeIcon className="h-4 w-4" />
@@ -849,7 +855,18 @@ export default function PayrollPage() {
                 <p className="font-bold text-gray-900 text-base">{fullSlip.employee?.firstName} {fullSlip.employee?.lastName}</p>
                 <p className="text-sm text-gray-500">{fullSlip.employee?.employeeCode} · {fullSlip.employee?.designation?.name || fullSlip.employee?.department?.name}</p>
               </div>
-              <button onClick={() => printPayslip(fullSlip)}
+              <button
+                onClick={async () => {
+                  try {
+                    const res = await exportsApi.payslipPdf(fullSlip.id)
+                    downloadBlob(res, `payslip_${fullSlip.employee?.employeeCode || fullSlip.id}.pdf`)
+                    toast.success('Payslip downloaded')
+                  } catch (err) {
+                    // Fall back to client-side print if server PDF fails
+                    toast.error('Server PDF unavailable, opening print view…')
+                    printPayslip(fullSlip)
+                  }
+                }}
                 className="flex items-center gap-2 rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white hover:bg-primary-500">
                 <ArrowDownTrayIcon className="h-4 w-4" /> Download PDF
               </button>
