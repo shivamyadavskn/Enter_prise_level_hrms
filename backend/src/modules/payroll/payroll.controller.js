@@ -54,20 +54,22 @@ export const upsertSalaryStructure = async (req, res) => {
     const netSalary = grossSalary - totalDeductions;
     const ctc = grossSalary + pfEmployer;
 
-    await prisma.salaryStructure.updateMany({ where: { employeeId, isActive: true }, data: { isActive: false } });
-
-    const structure = await prisma.salaryStructure.create({
-      data: {
-        employeeId,
-        effectiveFrom: new Date(effectiveFrom),
-        basicSalary, hra, conveyanceAllowance, medicalAllowance, specialAllowance,
-        grossSalary,
-        pfEmployee, pfEmployer, professionalTax, tds,
-        totalDeductions,
-        netSalary,
-        ctc,
-        isActive: true,
-      },
+    // TRANSACTIONAL: deactivate old + create new atomically
+    const structure = await prisma.$transaction(async (tx) => {
+      await tx.salaryStructure.updateMany({ where: { employeeId, isActive: true }, data: { isActive: false } });
+      return tx.salaryStructure.create({
+        data: {
+          employeeId,
+          effectiveFrom: new Date(effectiveFrom),
+          basicSalary, hra, conveyanceAllowance, medicalAllowance, specialAllowance,
+          grossSalary,
+          pfEmployee, pfEmployer, professionalTax, tds,
+          totalDeductions,
+          netSalary,
+          ctc,
+          isActive: true,
+        },
+      });
     });
 
     return R.created(res, structure, "Salary structure saved");
@@ -566,6 +568,7 @@ export const getPayrolls = async (req, res) => {
 export const getPayrollById = async (req, res) => {
   try {
     const id = Number(req.params.id);
+    if (!id || Number.isNaN(id)) return R.notFound(res, "Payroll not found");
     const payroll = await prisma.payroll.findUnique({
       where: { id },
       include: {
@@ -580,6 +583,11 @@ export const getPayrollById = async (req, res) => {
     });
 
     if (!payroll) return R.notFound(res, "Payroll not found");
+
+    // SECURITY: cross-org IDOR
+    if (req.organisationId && payroll.employee?.organisationId !== req.organisationId) {
+      return R.forbidden(res, "Access denied");
+    }
 
     if (req.user.role === "EMPLOYEE") {
       const emp = await prisma.employee.findFirst({ where: { userId: req.user.id } });
@@ -608,10 +616,26 @@ export const getMyPayslips = async (req, res) => {
   }
 };
 
+const VALID_PAYMENT_STATUSES = ["PENDING", "PROCESSED", "PAID", "FAILED"];
+
 export const updatePaymentStatus = async (req, res) => {
   try {
     const id = Number(req.params.id);
+    if (!id || Number.isNaN(id)) return R.notFound(res, "Payroll not found");
     const { paymentStatus, paymentDate } = req.body;
+    if (!VALID_PAYMENT_STATUSES.includes(paymentStatus)) {
+      return R.badRequest(res, `Invalid payment status. Allowed: ${VALID_PAYMENT_STATUSES.join(", ")}`);
+    }
+
+    // SECURITY: org check before mutation
+    const existing = await prisma.payroll.findUnique({
+      where: { id },
+      include: { employee: { select: { organisationId: true } } },
+    });
+    if (!existing) return R.notFound(res, "Payroll not found");
+    if (req.organisationId && existing.employee?.organisationId !== req.organisationId) {
+      return R.forbidden(res, "Access denied");
+    }
 
     const payroll = await prisma.payroll.update({
       where: { id },

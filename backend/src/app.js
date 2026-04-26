@@ -34,6 +34,8 @@ import customRoleRoutes from "./modules/custom-roles/custom-roles.routes.js";
 import letterRoutes from "./modules/letters/letters.routes.js";
 import complianceRoutes from "./modules/compliance/compliance.routes.js";
 import separationRoutes from "./modules/separation/separation.routes.js";
+import { authenticate } from "./middlewares/auth.middleware.js";
+import { requestId } from "./middlewares/requestId.middleware.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -46,25 +48,53 @@ const app = express();
   if (!fs.existsSync(fullPath)) fs.mkdirSync(fullPath, { recursive: true });
 });
 
+// ── Request correlation ID (must come first) ──────────────────────────────────
+app.use(requestId);
+
 // ── Security ──────────────────────────────────────────────────────────────────
-app.use(helmet());
+app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
+
+// CORS: allow comma-separated list of origins via CORS_ORIGIN.
+// SECURITY: never use credentials:true with wildcard origin.
+const allowedOrigins = (process.env.CORS_ORIGIN || "")
+  .split(",").map(o => o.trim()).filter(Boolean);
+
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || "*",
+  origin: (origin, cb) => {
+    // Allow no-origin (mobile apps, curl, server-to-server) and allowed origins
+    if (!origin) return cb(null, true);
+    if (allowedOrigins.length === 0) return cb(null, true); // dev fallback
+    if (allowedOrigins.includes(origin)) return cb(null, true);
+    return cb(new Error(`CORS: origin ${origin} not allowed`));
+  },
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization", "X-Org-Id"],
   credentials: true,
 }));
 
 // ── Rate Limiting ─────────────────────────────────────────────────────────────
+// Stricter limit for auth endpoints to prevent brute-force / credential stuffing.
+app.use("/api/auth/login", rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,                              // 20 login attempts per 15 min per IP
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: "Too many login attempts. Try again in 15 minutes." },
+}));
+
 app.use("/api/auth", rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 2000,
-  message: { success: false, message: "Too many requests, please try again later" },
+  max: 100,                             // refresh, me, change-password, etc.
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: "Too many auth requests, please try again later" },
 }));
 
 app.use("/api", rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 3000,
+  max: 600,                             // 600 req / 15 min per IP — safe for enterprise UX
+  standardHeaders: true,
+  legacyHeaders: false,
   message: { success: false, message: "Too many requests, please try again later" },
 }));
 
@@ -76,11 +106,35 @@ app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 app.use(morgan(process.env.NODE_ENV === "production" ? "combined" : "dev"));
 
 // ── Static Files ──────────────────────────────────────────────────────────────
-app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
+// SECURITY: gate /uploads behind authentication. For fine-grained access
+// (ownership/org isolation) the dedicated endpoints under /api/documents
+// and /api/reimbursements handle authorization.
+app.use("/uploads", authenticate, express.static(path.join(process.cwd(), "uploads"), {
+  dotfiles: "deny",
+  index: false,
+}));
 
-// ── Health Check ──────────────────────────────────────────────────────────────
-app.get("/health", (req, res) => {
+// ── Health Checks ─────────────────────────────────────────────────────────────
+// /health         -> cheap liveness probe (server up & responding)
+// /health/ready   -> deep readiness probe (DB + Redis reachable)
+app.get("/health", (_req, res) => {
   res.json({ status: "OK", timestamp: new Date().toISOString(), env: process.env.NODE_ENV });
+});
+
+app.get("/health/ready", async (_req, res) => {
+  const checks = { db: "unknown", redis: "unknown" };
+  let ok = true;
+  try {
+    const prisma = (await import("./config/prisma.js")).default;
+    await prisma.$queryRaw`SELECT 1`;
+    checks.db = "ok";
+  } catch (e) { ok = false; checks.db = `error: ${e.message}`; }
+  try {
+    const redis = (await import("./utils/redis.js")).default;
+    await redis.ping();
+    checks.redis = "ok";
+  } catch (e) { ok = false; checks.redis = `error: ${e.message}`; }
+  res.status(ok ? 200 : 503).json({ status: ok ? "READY" : "DEGRADED", checks, timestamp: new Date().toISOString() });
 });
 
 // ── API Routes ────────────────────────────────────────────────────────────────

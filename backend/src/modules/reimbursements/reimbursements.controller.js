@@ -21,6 +21,9 @@ export const getClaims = async (req, res) => {
         const teamIds = (await prisma.employee.findMany({ where: { managerId: mgr.id }, select: { id: true } })).map(e => e.id);
         where.employeeId = { in: [...teamIds, mgr.id] };
       }
+    } else {
+      // ADMIN/HR/SUPER_ADMIN/FINANCE — scope to organisation
+      if (req.organisationId) where.employee = { organisationId: req.organisationId };
     }
 
     const [claims, total] = await Promise.all([
@@ -46,7 +49,14 @@ export const createClaim = async (req, res) => {
       include: { employee: empInclude },
     });
 
-    const admins = await prisma.user.findMany({ where: { role: { in: ["ADMIN", "SUPER_ADMIN", "FINANCE"] }, isActive: true }, select: { id: true } });
+    const admins = await prisma.user.findMany({
+      where: {
+        role: { in: ["ADMIN", "SUPER_ADMIN", "FINANCE"] },
+        isActive: true,
+        ...(emp.organisationId ? { organisationId: emp.organisationId } : {}),
+      },
+      select: { id: true },
+    });
     await Promise.all(admins.map(u => prisma.notification.create({ data: { userId: u.id, notificationType: "REIMBURSEMENT", title: "New Reimbursement Claim", message: `${emp.firstName} ${emp.lastName} submitted a claim: ${title} (₹${totalAmount.toLocaleString('en-IN')})` } })));
 
     return R.created(res, claim, "Claim submitted successfully");
@@ -58,6 +68,18 @@ export const createClaim = async (req, res) => {
 export const approveClaim = async (req, res) => {
   try {
     const id = Number(req.params.id);
+    if (!id || Number.isNaN(id)) return R.notFound(res, "Claim not found");
+
+    // SECURITY: org check before mutation
+    const existing = await prisma.reimbursementClaim.findUnique({
+      where: { id },
+      include: { employee: { select: { organisationId: true } } },
+    });
+    if (!existing) return R.notFound(res, "Claim not found");
+    if (req.organisationId && existing.employee?.organisationId !== req.organisationId) {
+      return R.forbidden(res, "Access denied");
+    }
+
     const approver = await prisma.employee.findFirst({ where: { userId: req.user.id } });
     const claim = await prisma.reimbursementClaim.update({
       where: { id },
@@ -85,8 +107,20 @@ export const approveClaim = async (req, res) => {
 export const rejectClaim = async (req, res) => {
   try {
     const id = Number(req.params.id);
+    if (!id || Number.isNaN(id)) return R.notFound(res, "Claim not found");
     const { rejectionReason } = req.body;
     if (!rejectionReason) return R.badRequest(res, "Rejection reason required");
+
+    // SECURITY: org check before mutation
+    const existing = await prisma.reimbursementClaim.findUnique({
+      where: { id },
+      include: { employee: { select: { organisationId: true } } },
+    });
+    if (!existing) return R.notFound(res, "Claim not found");
+    if (req.organisationId && existing.employee?.organisationId !== req.organisationId) {
+      return R.forbidden(res, "Access denied");
+    }
+
     const approver = await prisma.employee.findFirst({ where: { userId: req.user.id } });
     const claim = await prisma.reimbursementClaim.update({
       where: { id },

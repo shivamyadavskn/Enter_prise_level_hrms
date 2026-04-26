@@ -3,6 +3,8 @@ import { z } from "zod";
 export const loginSchema = z.object({
   email: z.string().email("Invalid email"),
   password: z.string().min(1, "Password is required"),
+  // Optional TOTP token (6 digits) or backup code (8 hex chars). Required when 2FA enabled.
+  totp: z.string().min(6).max(12).optional(),
 });
 
 export const refreshTokenSchema = z.object({

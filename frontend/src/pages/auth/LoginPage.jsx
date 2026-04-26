@@ -7,19 +7,28 @@ import HrDashboardIllustration from '../../assets/illustrations/HrDashboardIllus
 export default function LoginPage() {
   const { login } = useAuth()
   const navigate = useNavigate()
-  const [form, setForm] = useState({ email: '', password: '' })
+  const [form, setForm] = useState({ email: '', password: '', totp: '' })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [twoFactorStep, setTwoFactorStep] = useState(false)
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
     setLoading(true)
     try {
-      await login(form)
+      // First call: email + password. If 2FA enabled, server replies with twoFactorRequired flag.
+      // Second call: include `totp` from authenticator app (or a backup code).
+      await login(twoFactorStep ? form : { email: form.email, password: form.password })
       navigate('/')
     } catch (err) {
-      setError(err.response?.data?.message || 'Login failed. Please try again.')
+      if (err.twoFactorRequired) {
+        setTwoFactorStep(true)
+        setError('')
+        setLoading(false)
+        return
+      }
+      setError(err.response?.data?.message || err.message || 'Login failed. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -63,10 +72,38 @@ export default function LoginPage() {
                 <input
                   id="password" type="password" required autoComplete="current-password"
                   placeholder="Enter your password"
+                  disabled={twoFactorStep}
                   value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })}
-                  className="block w-full rounded-lg border-0 py-2.5 px-3.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-primary-500 sm:text-sm transition-shadow"
+                  className="block w-full rounded-lg border-0 py-2.5 px-3.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-primary-500 sm:text-sm transition-shadow disabled:bg-gray-50"
                 />
               </div>
+
+              {twoFactorStep && (
+                <div>
+                  <label htmlFor="totp" className="block text-sm font-medium text-gray-700 mb-1.5">
+                    Authenticator code
+                  </label>
+                  <input
+                    id="totp" type="text" inputMode="numeric" autoFocus required
+                    autoComplete="one-time-code"
+                    placeholder="123456"
+                    pattern="[0-9A-Za-z]{6,12}"
+                    value={form.totp}
+                    onChange={(e) => setForm({ ...form, totp: e.target.value.replace(/\s/g, '') })}
+                    className="block w-full rounded-lg border-0 py-2.5 px-3.5 text-center text-lg font-mono tracking-[0.4em] text-gray-900 shadow-sm ring-1 ring-inset ring-primary-300 placeholder:text-gray-300 focus:ring-2 focus:ring-inset focus:ring-primary-500 sm:text-base transition-shadow"
+                  />
+                  <p className="mt-1.5 text-xs text-gray-500">
+                    Enter the 6-digit code from your authenticator app, or one of your backup codes.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => { setTwoFactorStep(false); setForm({ ...form, totp: '' }); setError('') }}
+                    className="mt-2 text-xs text-gray-400 hover:text-gray-600"
+                  >
+                    ← Use a different account
+                  </button>
+                </div>
+              )}
 
               <button
                 type="submit" disabled={loading}
@@ -75,9 +112,9 @@ export default function LoginPage() {
                 {loading ? (
                   <span className="flex items-center gap-2">
                     <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
-                    Signing in…
+                    {twoFactorStep ? 'Verifying…' : 'Signing in…'}
                   </span>
-                ) : 'Sign in'}
+                ) : (twoFactorStep ? 'Verify & sign in' : 'Sign in')}
               </button>
 
               <p className="text-center text-sm text-gray-500">
@@ -92,10 +129,11 @@ export default function LoginPage() {
               </Link>
             </div>
 
+            {import.meta.env.DEV && (
             <div className="mt-6">
               <div className="flex items-center gap-3 mb-3">
                 <div className="h-px flex-1 bg-gray-200" />
-                <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest">Demo Accounts</p>
+                <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest">Demo Accounts <span className="text-amber-500">(dev only)</span></p>
                 <div className="h-px flex-1 bg-gray-200" />
               </div>
               <div className="grid grid-cols-1 gap-1.5">
@@ -119,6 +157,7 @@ export default function LoginPage() {
                 ))}
               </div>
             </div>
+            )}
           </div>
         </div>
       </div>

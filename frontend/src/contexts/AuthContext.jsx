@@ -28,6 +28,12 @@ export function AuthProvider({ children }) {
 
   const login = async (credentials) => {
     const { data } = await authApi.login(credentials)
+    // 2FA gate: backend returns 200 with twoFactorRequired:true, no tokens
+    if (data?.twoFactorRequired) {
+      const err = new Error(data.message || 'Two-factor authentication required')
+      err.twoFactorRequired = true
+      throw err
+    }
     const { accessToken, refreshToken, user: u } = data.data
     localStorage.setItem('accessToken', accessToken)
     localStorage.setItem('refreshToken', refreshToken)

@@ -152,9 +152,9 @@ export const getLeaves = async (req, res) => {
     const { page = 1, limit = 10, status, leaveTypeId, employeeId, startDate, endDate } = req.query;
     const where = {};
 
+    // PERF: org-scope via relation filter instead of fetching all employee IDs (N+1 fix)
     if (req.organisationId) {
-      const orgEmpIds = (await prisma.employee.findMany({ where: { organisationId: req.organisationId }, select: { id: true } })).map(e => e.id);
-      where.employeeId = { in: orgEmpIds };
+      where.employee = { organisationId: req.organisationId };
     }
 
     if (req.user.role === "EMPLOYEE") {

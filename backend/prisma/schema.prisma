@@ -139,17 +139,26 @@ model User {
   role           UserRole  @default(EMPLOYEE)
   isActive       Boolean   @default(true)
   lastLogin      DateTime?
+
+  // 2FA / TOTP
+  twoFactorEnabled  Boolean   @default(false)
+  twoFactorSecret   String?   // encrypted at rest
+  twoFactorEnrolledAt DateTime?
+  backupCodes       Json?     // hashed one-time backup codes
+
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
-  organisation  Organisation?  @relation(fields: [organisationId], references: [id])
-  employee      Employee?
-  notifications Notification[]
-  uploadedDocs  Document[]     @relation("UploadedBy")
-  refreshTokens RefreshToken[]
-  auditLogs     AuditLog[]
+  organisation     Organisation?     @relation(fields: [organisationId], references: [id])
+  employee         Employee?
+  notifications    Notification[]
+  uploadedDocs     Document[]        @relation("UploadedBy")
+  refreshTokens    RefreshToken[]
+  auditLogs        AuditLog[]
   payrollRevisions PayrollRevision[]
 
+  @@index([organisationId, email])
+  @@index([organisationId, isActive])
   @@map("users")
 }
 
@@ -429,6 +438,9 @@ model LeaveApplication {
   approvedBy       Employee?               @relation("LeaveApprover", fields: [approvedById], references: [id])
   approvalWorkflow LeaveApprovalWorkflow[]
 
+  @@index([employeeId, status])
+  @@index([employeeId, startDate])
+  @@index([status, startDate])
   @@map("leave_applications")
 }
 
@@ -506,6 +518,9 @@ model WfhRequest {
   employee   Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
   approvedBy Employee? @relation("WfhApprover", fields: [approvedById], references: [id])
 
+  @@index([employeeId, status])
+  @@index([employeeId, startDate])
+  @@index([status, startDate])
   @@map("wfh_requests")
 }
 
@@ -596,6 +611,8 @@ model Document {
   employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
   uploadedBy User     @relation("UploadedBy", fields: [uploadedById], references: [id])
 
+  @@index([employeeId, documentType])
+  @@index([employeeId, uploadedOn])
   @@map("documents")
 }
 
@@ -610,6 +627,7 @@ model Notification {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId, isRead, createdAt])
   @@map("notifications")
 }
 
@@ -632,6 +650,8 @@ model ReimbursementClaim {
   employee   Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
   approvedBy Employee? @relation("ReimbursementApprover", fields: [approvedById], references: [id])
 
+  @@index([employeeId, status])
+  @@index([status, createdAt])
   @@map("reimbursement_claims")
 }
 
@@ -948,16 +968,16 @@ model LetterTemplate {
 }
 
 model GeneratedLetter {
-  id           Int      @id @default(autoincrement())
+  id           Int            @id @default(autoincrement())
   templateId   Int
   employeeId   Int
   letterNumber String?
   category     LetterCategory
   subject      String?
-  body         String   @db.Text
+  body         String         @db.Text
   metadata     Json?
   generatedBy  Int
-  generatedAt  DateTime @default(now())
+  generatedAt  DateTime       @default(now())
 
   template LetterTemplate @relation(fields: [templateId], references: [id])
   employee Employee       @relation(fields: [employeeId], references: [id], onDelete: Cascade)
@@ -986,29 +1006,29 @@ enum SeparationStatus {
 }
 
 model Separation {
-  id                 Int              @id @default(autoincrement())
-  employeeId         Int              @unique
-  organisationId     Int?
-  separationType     SeparationType
-  reason             String?
-  initiatedDate      DateTime         @default(now())
-  resignationDate    DateTime?        @db.Date
-  lastWorkingDate    DateTime?        @db.Date
-  noticePeriodDays   Int              @default(30)
-  noticePeriodServed Int              @default(0)
-  noticePeriodShortfall Int           @default(0)
-  exitInterviewDone  Boolean          @default(false)
-  exitFeedback       String?          @db.Text
-  fnfAmount          Float?
-  fnfBreakdown       Json?
-  assetRecoveryStatus String          @default("PENDING")
-  assetsToRecover    Json?
-  status             SeparationStatus @default(INITIATED)
-  completedDate      DateTime?
-  remarks            String?
-  initiatedBy        Int
-  createdAt          DateTime         @default(now())
-  updatedAt          DateTime         @updatedAt
+  id                    Int              @id @default(autoincrement())
+  employeeId            Int              @unique
+  organisationId        Int?
+  separationType        SeparationType
+  reason                String?
+  initiatedDate         DateTime         @default(now())
+  resignationDate       DateTime?        @db.Date
+  lastWorkingDate       DateTime?        @db.Date
+  noticePeriodDays      Int              @default(30)
+  noticePeriodServed    Int              @default(0)
+  noticePeriodShortfall Int              @default(0)
+  exitInterviewDone     Boolean          @default(false)
+  exitFeedback          String?          @db.Text
+  fnfAmount             Float?
+  fnfBreakdown          Json?
+  assetRecoveryStatus   String           @default("PENDING")
+  assetsToRecover       Json?
+  status                SeparationStatus @default(INITIATED)
+  completedDate         DateTime?
+  remarks               String?
+  initiatedBy           Int
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
 
   employee Employee @relation(fields: [employeeId], references: [id])
 

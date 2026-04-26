@@ -3,7 +3,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { employeesApi, authApi } from '../../api/index.js'
 import { useAuth } from '../../contexts/AuthContext.jsx'
 import { PageLoader } from '../../components/common/LoadingSpinner.jsx'
-import { UserCircleIcon, KeyIcon, BanknotesIcon, PhoneIcon, CheckCircleIcon, BriefcaseIcon, AcademicCapIcon, DocumentTextIcon, PlusIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline'
+import { UserCircleIcon, KeyIcon, BanknotesIcon, PhoneIcon, CheckCircleIcon, BriefcaseIcon, AcademicCapIcon, DocumentTextIcon, PlusIcon, PencilIcon, TrashIcon, ShieldCheckIcon } from '@heroicons/react/24/outline'
+import TwoFactorSettings from '../../components/auth/TwoFactorSettings.jsx'
 import toast from 'react-hot-toast'
 import { format } from 'date-fns'
 
@@ -18,7 +19,7 @@ const TABS = [
   { id: 'experience', label: 'Experience',            icon: BriefcaseIcon },
   { id: 'education',  label: 'Education',             icon: AcademicCapIcon },
   { id: 'documents',  label: 'Documents',             icon: DocumentTextIcon },
-  { id: 'password',   label: 'Change Password',       icon: KeyIcon },
+  { id: 'security',   label: 'Security',              icon: ShieldCheckIcon },
 ]
 
 const EMP_TYPES = ['Full-time', 'Part-time', 'Contract', 'Internship', 'Freelance']
@@ -114,7 +115,7 @@ export default function MyProfilePage() {
   )
 
   return (
-    <div className="space-y-6 max-w-4xl animate-fade-in">
+    <div className="space-y-6 animate-fade-in">
       {/* Page Header */}
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-gray-900">My Profile</h1>
@@ -244,7 +245,10 @@ export default function MyProfilePage() {
           </div>
         )}
 
-        {tab === 'password' && (
+        {tab === 'security' && (
+          <div className="space-y-6 max-w-2xl">
+            <TwoFactorSettings />
+
           <form onSubmit={handlePw} className="space-y-5 max-w-md">
             <div>
               <h3 className="text-base font-semibold text-gray-900">Change Password</h3>
@@ -260,6 +264,7 @@ export default function MyProfilePage() {
               </button>
             </div>
           </form>
+          </div>
         )}
 
         {/* ── Experience ── */}

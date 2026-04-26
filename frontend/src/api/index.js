@@ -7,6 +7,11 @@ export const authApi = {
   refresh: (refreshToken) => api.post('/auth/refresh', { refreshToken }),
   me: () => api.get('/auth/me'),
   changePassword: (data) => api.put('/auth/change-password', data),
+  // 2FA
+  twofaStatus: () => api.get('/auth/2fa/status'),
+  twofaEnroll: () => api.post('/auth/2fa/enroll'),
+  twofaVerifyEnroll: (token) => api.post('/auth/2fa/verify-enroll', { token }),
+  twofaDisable: (data) => api.post('/auth/2fa/disable', data),
 }
 
 // ── Platform (Super-Admin god mode) ───────────────────────────────────────────

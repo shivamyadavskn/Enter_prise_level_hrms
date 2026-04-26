@@ -18,6 +18,8 @@ export const getWfhRequests = async (req, res) => {
         where.employeeId = employeeId ? Number(employeeId) : { in: [...teamIds, mgr.id] };
       }
     } else {
+      // ADMIN/HR/SUPER_ADMIN — scope to organisation
+      if (req.organisationId) where.employee = { organisationId: req.organisationId };
       if (employeeId) where.employeeId = Number(employeeId);
     }
 
@@ -99,11 +101,26 @@ export const getWfhById = async (req, res) => {
     const wfh = await prisma.wfhRequest.findUnique({
       where: { id: Number(req.params.id) },
       include: {
-        employee: { select: { id: true, firstName: true, lastName: true, employeeCode: true } },
+        employee: { select: { id: true, firstName: true, lastName: true, employeeCode: true, organisationId: true, userId: true, managerId: true } },
         approvedBy: { select: { id: true, firstName: true, lastName: true } },
       },
     });
     if (!wfh) return R.notFound(res, "WFH request not found");
+
+    // SECURITY: cross-org IDOR check
+    if (req.organisationId && wfh.employee?.organisationId !== req.organisationId) {
+      return R.forbidden(res, "Access denied");
+    }
+    // SECURITY: employees can only see their own; managers their team’s
+    if (req.user.role === "EMPLOYEE" && wfh.employee?.userId !== req.user.id) {
+      return R.forbidden(res, "Access denied");
+    }
+    if (req.user.role === "MANAGER") {
+      const mgr = await prisma.employee.findFirst({ where: { userId: req.user.id }, select: { id: true } });
+      if (!mgr || (wfh.employee.managerId !== mgr.id && wfh.employee.userId !== req.user.id)) {
+        return R.forbidden(res, "Access denied");
+      }
+    }
     return R.success(res, wfh);
   } catch (err) {
     return R.error(res, err.message);

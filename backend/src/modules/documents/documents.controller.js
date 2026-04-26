@@ -44,14 +44,8 @@ export const getDocuments = async (req, res) => {
       where.employeeId = emp.id;
     } else {
       if (employeeId) where.employeeId = Number(employeeId);
-      if (req.organisationId) {
-        const orgEmpIds = (await prisma.employee.findMany({ where: { organisationId: req.organisationId }, select: { id: true } })).map(e => e.id);
-        if (where.employeeId) {
-          if (!orgEmpIds.includes(where.employeeId)) return R.paginated(res, [], 0, page, limit);
-        } else {
-          where.employeeId = { in: orgEmpIds };
-        }
-      }
+      // PERF: org-scope via relation filter instead of pre-fetching all employee IDs (N+1 fix)
+      if (req.organisationId) where.employee = { organisationId: req.organisationId };
     }
 
     if (documentType) where.documentType = documentType;

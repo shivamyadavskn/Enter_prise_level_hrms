@@ -80,8 +80,10 @@ export const getSeparations = async (req, res) => {
 
 export const getSeparationById = async (req, res) => {
   try {
+    const id = Number(req.params.id);
+    if (!id || Number.isNaN(id)) return R.notFound(res, "Separation not found");
     const sep = await prisma.separation.findUnique({
-      where: { id: Number(req.params.id) },
+      where: { id },
       include: {
         employee: {
           include: {
@@ -94,6 +96,10 @@ export const getSeparationById = async (req, res) => {
       },
     });
     if (!sep) return R.notFound(res, "Separation not found");
+    // SECURITY: cross-org IDOR
+    if (req.organisationId && sep.organisationId !== req.organisationId) {
+      return R.forbidden(res, "Access denied");
+    }
     return R.success(res, sep);
   } catch (err) {
     return R.error(res, err.message);

@@ -1,4 +1,7 @@
 import "dotenv/config";
+import { validateEnv } from "./src/config/env.js";
+validateEnv();
+
 import app from "./src/app.js";
 import prisma from "./src/config/prisma.js";
 import redis from "./src/utils/redis.js";

@@ -1,0 +1,23 @@
+{
+  "name": "PeopleOS — HRMS",
+  "short_name": "PeopleOS",
+  "description": "All-in-one HRMS with payroll anomaly detection, compliance dashboard, and letter generation.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#f9fafb",
+  "theme_color": "#4f46e5",
+  "lang": "en-IN",
+  "categories": ["business", "productivity"],
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Approvals",      "url": "/approvals",      "description": "Review pending approvals" },
+    { "name": "Attendance",     "url": "/attendance",     "description": "Mark attendance" },
+    { "name": "Apply Leave",    "url": "/leaves",         "description": "Apply for leave" },
+    { "name": "Notifications",  "url": "/notifications",  "description": "View notifications" }
+  ]
+}
