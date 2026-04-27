@@ -2,6 +2,7 @@ import { Router } from "express";
 import {
   downloadPayslip,
   exportEmployees, exportAttendance, exportPayroll, exportLeaves,
+  downloadEmployeeImportTemplate,
 } from "./exports.controller.js";
 import { authenticate } from "../../middlewares/auth.middleware.js";
 import { authorize } from "../../middlewares/rbac.middleware.js";
@@ -18,5 +19,8 @@ router.get("/employees.xlsx",  authorize(...EXPORT_ROLES), exportEmployees);
 router.get("/attendance.xlsx", authorize(...EXPORT_ROLES), exportAttendance);
 router.get("/payroll.xlsx",    authorize("SUPER_ADMIN", "ADMIN", "FINANCE"), exportPayroll);
 router.get("/leaves.xlsx",     authorize(...EXPORT_ROLES), exportLeaves);
+
+// Sample import templates (downloadable so users know the expected format)
+router.get("/templates/employees.xlsx", authorize(...EXPORT_ROLES), downloadEmployeeImportTemplate);
 
 export default router;

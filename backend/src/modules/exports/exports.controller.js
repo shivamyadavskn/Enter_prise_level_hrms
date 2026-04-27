@@ -191,6 +191,66 @@ export const exportPayroll = async (req, res) => {
   } catch (err) { return R.error(res, err.message); }
 };
 
+/**
+ * GET /api/exports/templates/employees.xlsx
+ * Streams a downloadable, ready-to-fill template with two sheets:
+ *  - "Employees"   — header row + a couple of example rows
+ *  - "Instructions"— column-by-column reference
+ *
+ * Accepted column names (importer is case-/space-insensitive and accepts
+ * many synonyms — see backend/src/modules/employees/import.controller.js).
+ */
+export const downloadEmployeeImportTemplate = async (_req, res) => {
+  try {
+    const sample = [
+      {
+        "Employee Code": "EMP001",
+        "First Name":   "Asha",
+        "Last Name":    "Sharma",
+        "Email":        "asha.sharma@example.com",
+        "Phone":        "9876543210",
+        "Gender":       "FEMALE",
+        "Department":   "Engineering",
+        "Designation":  "Senior Engineer",
+        "Date of Joining": "2024-04-01",
+      },
+      {
+        "Employee Code": "EMP002",
+        "First Name":   "Ravi",
+        "Last Name":    "Kumar",
+        "Email":        "ravi.kumar@example.com",
+        "Phone":        "9876500000",
+        "Gender":       "MALE",
+        "Department":   "Sales",
+        "Designation":  "Account Manager",
+        "Date of Joining": "2024-06-15",
+      },
+    ];
+
+    const instructions = [
+      { Column: "Employee Code", Required: "No",  Notes: "Optional. Auto-generated as EMP001, EMP002… if blank. Must be unique per organisation." },
+      { Column: "First Name",    Required: "Yes", Notes: "Mandatory. Max 50 characters." },
+      { Column: "Last Name",     Required: "No",  Notes: "Optional. Max 50 characters." },
+      { Column: "Email",         Required: "No",  Notes: "Optional but recommended. Must be unique. A login account is auto-created with a temporary password." },
+      { Column: "Phone",         Required: "No",  Notes: "Free-form text. 10-digit numbers preferred." },
+      { Column: "Gender",        Required: "No",  Notes: "One of: MALE, FEMALE, OTHER. Case-insensitive. Other values are ignored." },
+      { Column: "Department",    Required: "No",  Notes: "Department name. Created automatically if it does not exist." },
+      { Column: "Designation",   Required: "No",  Notes: "Job title / designation. Created automatically if it does not exist." },
+      { Column: "Date of Joining", Required: "No", Notes: "Format: YYYY-MM-DD or any Excel date cell." },
+      { Column: "—", Required: "—", Notes: "—" },
+      { Column: "Synonyms accepted", Required: "—", Notes: "First Name = Name; Email = Email ID = Email Address; Phone = Mobile; Date of Joining = DOJ = Joining Date; Employee Code = Emp Code = EmpCode; Designation = Role = Title = Job Title." },
+      { Column: "Tips",          Required: "—",   Notes: "Save as .xlsx or .csv (UTF-8). Max 5 MB. Header row required. Blank cells are skipped silently." },
+    ];
+
+    return streamWorkbook(res, "employee_import_template", [
+      { name: "Employees",    rows: sample },
+      { name: "Instructions", rows: instructions },
+    ]);
+  } catch (err) {
+    return R.error(res, err.message);
+  }
+};
+
 /** GET /api/exports/leaves.xlsx?from=&to=&status= */
 export const exportLeaves = async (req, res) => {
   try {

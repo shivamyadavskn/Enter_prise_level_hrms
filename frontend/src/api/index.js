@@ -303,6 +303,8 @@ export const exportsApi = {
   attendanceXlsx:   (params)       => api.get('/exports/attendance.xlsx',         { params, responseType: 'blob' }),
   payrollXlsx:      (params)       => api.get('/exports/payroll.xlsx',            { params, responseType: 'blob' }),
   leavesXlsx:       (params)       => api.get('/exports/leaves.xlsx',             { params, responseType: 'blob' }),
+  // Sample/template downloads — show clients the expected Excel format
+  employeeImportTemplate: () => api.get('/exports/templates/employees.xlsx', { responseType: 'blob' }),
 }
 
 /** Downloads a blob response with a sensible filename. */

@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react'
-import { employeesApi } from '../../api/index.js'
+import { employeesApi, exportsApi, downloadBlob } from '../../api/index.js'
 import Modal from './Modal.jsx'
-import { ArrowUpTrayIcon, TableCellsIcon, CheckCircleIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline'
+import { ArrowUpTrayIcon, ArrowDownTrayIcon, TableCellsIcon, CheckCircleIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline'
 import toast from 'react-hot-toast'
 
 const FIELD_OPTIONS = ['firstName', 'lastName', 'email', 'phone', 'department', 'designation', 'dateOfJoining', 'gender', 'employeeCode', 'basicSalary', '(ignore)']
@@ -85,6 +85,30 @@ export default function EmployeeImportModal({ open, onClose, onSuccess }) {
       {/* Step 0 — Upload */}
       {step === 0 && (
         <div className="space-y-4">
+          {/* Sample template download — helps clients see the expected format */}
+          <div className="flex items-start gap-3 rounded-lg border border-primary-200 bg-primary-50 p-3">
+            <TableCellsIcon className="h-5 w-5 text-primary-600 mt-0.5 flex-shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-primary-900">First time? Start with our sample template</p>
+              <p className="text-xs text-primary-700 mt-0.5">Includes example rows + an Instructions sheet describing every column.</p>
+            </div>
+            <button
+              type="button"
+              onClick={async () => {
+                try {
+                  const res = await exportsApi.employeeImportTemplate()
+                  downloadBlob(res, 'employee_import_template.xlsx')
+                  toast.success('Template downloaded')
+                } catch (e) {
+                  toast.error('Failed to download template')
+                }
+              }}
+              className="flex-shrink-0 inline-flex items-center gap-1.5 rounded-md bg-white px-3 py-1.5 text-xs font-semibold text-primary-700 ring-1 ring-primary-300 hover:bg-primary-100"
+            >
+              <ArrowDownTrayIcon className="h-4 w-4" /> Download template
+            </button>
+          </div>
+
           <div
             onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
             onDragLeave={() => setDragOver(false)}
