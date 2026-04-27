@@ -7,7 +7,7 @@ import prisma from "./src/config/prisma.js";
 import redis from "./src/utils/redis.js";
 import { startCronJobs } from "./src/services/cron.service.js";
 
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3000;
 
 const startServer = async () => {
   try {

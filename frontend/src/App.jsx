@@ -9,6 +9,8 @@ import PageLoader from './components/common/PageLoader.jsx'
 import LoginPage from './pages/auth/LoginPage.jsx'
 import RegisterPage from './pages/auth/RegisterPage.jsx'
 import LandingPage from './pages/landing/LandingPage.jsx'
+const TermsPage = lazy(() => import('./pages/legal/TermsPage.jsx'))
+const PrivacyPage = lazy(() => import('./pages/legal/PrivacyPage.jsx'))
 
 // Lazy-load every other page so initial bundle stays small.
 // Each becomes its own JS chunk fetched on first navigation to that route.
@@ -96,6 +98,8 @@ function AppRoutes() {
     <Suspense fallback={<PageLoader />}>
       <Routes>
         <Route path="/welcome" element={<LandingPage />} />
+        <Route path="/legal/terms"   element={<TermsPage />} />
+        <Route path="/legal/privacy" element={<PrivacyPage />} />
         <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
         <Route path="/register" element={<PublicRoute><RegisterPage /></PublicRoute>} />
         <Route path="/platform/setup" element={<PublicRoute><PlatformSetupPage /></PublicRoute>} />

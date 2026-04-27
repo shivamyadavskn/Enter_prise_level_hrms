@@ -11,7 +11,9 @@
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
     "db:seed": "prisma db seed",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "prisma": {
     "seed": "node prisma/seed.js"
@@ -40,6 +42,8 @@
   },
   "devDependencies": {
     "nodemon": "^3.1.4",
-    "prisma": "^5.14.0"
+    "prisma": "^5.14.0",
+    "supertest": "^7.0.0",
+    "vitest": "^2.1.0"
   }
 }

@@ -11,6 +11,7 @@ import { PageLoader } from '../../components/common/LoadingSpinner.jsx'
 import { ClockIcon, CheckIcon, XMarkIcon, ArrowPathIcon, ExclamationTriangleIcon, MapPinIcon } from '@heroicons/react/24/outline'
 import toast from 'react-hot-toast'
 import { format } from 'date-fns'
+import { getLocationString } from '../../utils/geolocation.js'
 
 function LiveTimer({ clockIn }) {
   const [elapsed, setElapsed] = useState('')
@@ -174,14 +175,24 @@ export default function AttendancePage() {
             {/* Action Button */}
             <div className="flex flex-col items-end gap-2">
               {!today?.clockIn && !noProfile && (
-                <button onClick={() => clockInMut.mutate({})} disabled={clockInMut.isPending}
+                <button
+                  onClick={async () => {
+                    const location = await getLocationString()
+                    clockInMut.mutate({ location })
+                  }}
+                  disabled={clockInMut.isPending}
                   className="flex items-center gap-2 rounded-xl bg-emerald-600 px-6 py-3 text-sm font-bold text-white shadow-sm hover:bg-emerald-700 hover:shadow-md disabled:opacity-50 transition-all">
                   <ClockIcon className="h-5 w-5" />
                   {clockInMut.isPending ? 'Clocking In…' : 'Clock In'}
                 </button>
               )}
               {today?.clockIn && !today?.clockOut && (
-                <button onClick={() => clockOutMut.mutate({})} disabled={clockOutMut.isPending}
+                <button
+                  onClick={async () => {
+                    const location = await getLocationString()
+                    clockOutMut.mutate({ location })
+                  }}
+                  disabled={clockOutMut.isPending}
                   className="flex items-center gap-2 rounded-xl bg-red-600 px-6 py-3 text-sm font-bold text-white shadow-sm hover:bg-red-700 hover:shadow-md disabled:opacity-50 transition-all animate-pulse-slow">
                   <ClockIcon className="h-5 w-5" />
                   {clockOutMut.isPending ? 'Clocking Out…' : 'Clock Out'}

@@ -494,7 +494,13 @@ function Footer() {
         </div>
         <div className="pt-8 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-gray-500">
           <p>&copy; {new Date().getFullYear()} PeopleOS. Made in India for Indian businesses.</p>
-          <p>Privacy &middot; Terms &middot; Security</p>
+          <p className="flex items-center gap-1">
+            <a href="/legal/privacy" className="hover:text-primary-600">Privacy</a>
+            <span>&middot;</span>
+            <a href="/legal/terms"   className="hover:text-primary-600">Terms</a>
+            <span>&middot;</span>
+            <span>Security</span>
+          </p>
         </div>
       </div>
     </footer>

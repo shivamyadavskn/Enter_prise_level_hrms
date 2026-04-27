@@ -1,6 +1,7 @@
 import prisma from "../../config/prisma.js";
 import * as R from "../../utils/response.js";
 import { sendLeaveApproved, sendLeaveRejected, sendLeaveRequest } from "../../services/email.service.js";
+import { slack } from "../../services/slack.service.js";
 
 const calcWorkingDays = (start, end) => {
   let count = 0;
@@ -264,6 +265,7 @@ export const applyLeave = async (req, res) => {
       }
     }
 
+    slack.leaveApplied(emp, { ...leave, leaveType }).catch(() => {});
     return R.created(res, leave, "Leave application submitted successfully");
   } catch (err) {
     return R.error(res, err.message);
@@ -323,6 +325,7 @@ export const approveLeave = async (req, res) => {
       }).catch(() => {});
     }
 
+    slack.leaveDecision(leave.employee, leave, "APPROVED").catch(() => {});
     return R.success(res, updatedLeave, "Leave approved successfully");
   } catch (err) {
     return R.error(res, err.message);
@@ -361,6 +364,7 @@ export const rejectLeave = async (req, res) => {
       }).catch(() => {});
     }
 
+    slack.leaveDecision(leave.employee, leave, "REJECTED").catch(() => {});
     return R.success(res, updatedLeave, "Leave rejected");
   } catch (err) {
     return R.error(res, err.message);
