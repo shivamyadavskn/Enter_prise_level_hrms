@@ -13,19 +13,19 @@ const labelCls = 'block text-sm font-medium text-gray-600'
 const fmtDate = (d) => d ? format(new Date(d), 'MMM yyyy') : 'Present'
 
 const TABS = [
-  { id: 'personal',   label: 'Personal Info',        icon: UserCircleIcon },
-  { id: 'bank',       label: 'Bank & PAN',            icon: BanknotesIcon },
-  { id: 'contact',    label: 'Contact & Emergency',   icon: PhoneIcon },
-  { id: 'experience', label: 'Experience',            icon: BriefcaseIcon },
-  { id: 'education',  label: 'Education',             icon: AcademicCapIcon },
-  { id: 'documents',  label: 'Documents',             icon: DocumentTextIcon },
-  { id: 'security',   label: 'Security',              icon: ShieldCheckIcon },
+  { id: 'personal', label: 'Personal Info', icon: UserCircleIcon },
+  { id: 'bank', label: 'Bank & PAN', icon: BanknotesIcon },
+  { id: 'contact', label: 'Contact & Emergency', icon: PhoneIcon },
+  { id: 'experience', label: 'Experience', icon: BriefcaseIcon },
+  { id: 'education', label: 'Education', icon: AcademicCapIcon },
+  { id: 'documents', label: 'Documents', icon: DocumentTextIcon },
+  { id: 'security', label: 'Security', icon: ShieldCheckIcon },
 ]
 
 const EMP_TYPES = ['Full-time', 'Part-time', 'Contract', 'Internship', 'Freelance']
-const DOC_TYPES = ['ID_PROOF','ADDRESS_PROOF','EDUCATION','EXPERIENCE','OFFER_LETTER','APPOINTMENT_LETTER','CONFIRMATION_LETTER','RELIEVING_LETTER','RESIGNATION_LETTER','CONTRACT','PAYSLIP','OTHER']
-const emptyExp = { companyName:'', jobTitle:'', department:'', location:'', employmentType:'Full-time', startDate:'', endDate:'', isCurrent:false, ctc:'', responsibilities:'', reasonForLeaving:'' }
-const emptyEdu = { degree:'', fieldOfStudy:'', institution:'', board:'', startYear:'', endYear:'', grade:'' }
+const DOC_TYPES = ['ID_PROOF', 'ADDRESS_PROOF', 'EDUCATION', 'EXPERIENCE', 'OFFER_LETTER', 'APPOINTMENT_LETTER', 'CONFIRMATION_LETTER', 'RELIEVING_LETTER', 'RESIGNATION_LETTER', 'CONTRACT', 'PAYSLIP', 'OTHER']
+const emptyExp = { companyName: '', jobTitle: '', department: '', location: '', employmentType: 'Full-time', startDate: '', endDate: '', isCurrent: false, ctc: '', responsibilities: '', reasonForLeaving: '' }
+const emptyEdu = { degree: '', fieldOfStudy: '', institution: '', board: '', startYear: '', endYear: '', grade: '' }
 
 export default function MyProfilePage() {
   const { user } = useAuth()
@@ -237,7 +237,7 @@ export default function MyProfilePage() {
               </div>
             </div>
             <div className="flex justify-end pt-4 border-t border-gray-100">
-              <button onClick={() => handleSave(['address','city','state','country','postalCode','emergencyContactName','emergencyContactPhone'])} disabled={updateMut.isPending}
+              <button onClick={() => handleSave(['address', 'city', 'state', 'country', 'postalCode', 'emergencyContactName', 'emergencyContactPhone'])} disabled={updateMut.isPending}
                 className="rounded-lg bg-primary-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-primary-700 disabled:opacity-50 transition-colors">
                 {updateMut.isPending ? 'Saving…' : 'Save Contact Info'}
               </button>
@@ -249,21 +249,21 @@ export default function MyProfilePage() {
           <div className="space-y-6 max-w-2xl">
             <TwoFactorSettings />
 
-          <form onSubmit={handlePw} className="space-y-5 max-w-md">
-            <div>
-              <h3 className="text-base font-semibold text-gray-900">Change Password</h3>
-              <p className="text-sm text-gray-400 mt-0.5">Must be at least 8 characters long</p>
-            </div>
-            <div><label className={labelCls}>Current Password</label><input type="password" required value={pwForm.currentPassword} onChange={pw('currentPassword')} className={inputCls} placeholder="Enter current password" /></div>
-            <div><label className={labelCls}>New Password</label><input type="password" required value={pwForm.newPassword} onChange={pw('newPassword')} className={inputCls} placeholder="Enter new password" /></div>
-            <div><label className={labelCls}>Confirm New Password</label><input type="password" required value={pwForm.confirmPassword} onChange={pw('confirmPassword')} className={inputCls} placeholder="Confirm new password" /></div>
-            <div className="flex justify-end pt-4 border-t border-gray-100">
-              <button type="submit" disabled={pwMut.isPending}
-                className="rounded-lg bg-primary-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-primary-700 disabled:opacity-50 transition-colors">
-                {pwMut.isPending ? 'Changing…' : 'Change Password'}
-              </button>
-            </div>
-          </form>
+            <form onSubmit={handlePw} className="space-y-5 max-w-md">
+              <div>
+                <h3 className="text-base font-semibold text-gray-900">Change Password</h3>
+                <p className="text-sm text-gray-400 mt-0.5">Must be at least 8 characters long</p>
+              </div>
+              <div><label className={labelCls}>Current Password</label><input type="password" required value={pwForm.currentPassword} onChange={pw('currentPassword')} className={inputCls} placeholder="Enter current password" /></div>
+              <div><label className={labelCls}>New Password</label><input type="password" required value={pwForm.newPassword} onChange={pw('newPassword')} className={inputCls} placeholder="Enter new password" /></div>
+              <div><label className={labelCls}>Confirm New Password</label><input type="password" required value={pwForm.confirmPassword} onChange={pw('confirmPassword')} className={inputCls} placeholder="Confirm new password" /></div>
+              <div className="flex justify-end pt-4 border-t border-gray-100">
+                <button type="submit" disabled={pwMut.isPending}
+                  className="rounded-lg bg-primary-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-primary-700 disabled:opacity-50 transition-colors">
+                  {pwMut.isPending ? 'Changing…' : 'Change Password'}
+                </button>
+              </div>
+            </form>
           </div>
         )}
 

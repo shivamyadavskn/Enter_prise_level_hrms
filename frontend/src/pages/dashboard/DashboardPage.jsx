@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { reportsApi, attendanceApi, leavesApi } from '../../api/index.js'
 import { useAuth } from '../../contexts/AuthContext.jsx'
 import StatCard from '../../components/common/StatCard.jsx'
+import CelebrationsWidget from '../../components/dashboard/CelebrationsWidget.jsx'
 import Badge from '../../components/common/Badge.jsx'
 import { PageLoader } from '../../components/common/LoadingSpinner.jsx'
 import {
@@ -261,6 +262,13 @@ export default function DashboardPage() {
             </div>
           </div>
         )}
+      </div>
+
+      {/* ─── Celebrations ───────────────────────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        <div className="lg:col-span-1">
+          <CelebrationsWidget days={14} />
+        </div>
       </div>
     </div>
   )

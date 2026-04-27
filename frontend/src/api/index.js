@@ -288,6 +288,13 @@ export const complianceApi = {
   getBankFile: (params) => api.get('/compliance/bank-file', { params }),
 }
 
+// ── Celebrations (birthdays + work anniversaries) ────────────────────────────
+export const celebrationsApi = {
+  getUpcoming: (days = 30) => api.get('/celebrations/upcoming', { params: { days } }),
+  runDigest:   ()           => api.post('/celebrations/run-cron'),
+  runAccrual:  ()           => api.post('/celebrations/run-accrual'),
+}
+
 // ── Exports (PDF + Excel) ─────────────────────────────────────────────────────
 // All return blobs; use the downloadBlob helper to trigger a browser save.
 export const exportsApi = {

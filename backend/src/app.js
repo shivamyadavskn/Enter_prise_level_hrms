@@ -35,6 +35,7 @@ import letterRoutes from "./modules/letters/letters.routes.js";
 import complianceRoutes from "./modules/compliance/compliance.routes.js";
 import separationRoutes from "./modules/separation/separation.routes.js";
 import exportRoutes from "./modules/exports/exports.routes.js";
+import celebrationRoutes from "./modules/celebrations/celebrations.routes.js";
 import { authenticate } from "./middlewares/auth.middleware.js";
 import { requestId } from "./middlewares/requestId.middleware.js";
 import { notFoundHandler, globalErrorHandler } from "./middlewares/errorHandler.middleware.js";
@@ -168,6 +169,7 @@ app.use("/api/letters", letterRoutes);
 app.use("/api/compliance", complianceRoutes);
 app.use("/api/separation", separationRoutes);
 app.use("/api/exports", exportRoutes);
+app.use("/api/celebrations", celebrationRoutes);
 
 // ── 404 + Global Error Handler ────────────────────────────────────────────────
 app.use(notFoundHandler);

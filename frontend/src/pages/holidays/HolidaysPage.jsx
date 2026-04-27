@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { holidaysApi, leavesApi } from '../../api/index.js'
 import { useAuth } from '../../contexts/AuthContext.jsx'
 import Modal from '../../components/common/Modal.jsx'
-import { PlusIcon, TrashIcon, DocumentArrowDownIcon, PencilIcon } from '@heroicons/react/24/outline'
+import { PlusIcon, TrashIcon, DocumentArrowDownIcon, PencilIcon, Squares2X2Icon, ListBulletIcon } from '@heroicons/react/24/outline'
 import { generateHolidayPolicy, generateLeavePolicy } from '../../utils/docTemplates.js'
 import toast from 'react-hot-toast'
 
@@ -20,6 +20,7 @@ export default function HolidaysPage() {
   const qc = useQueryClient()
   const [year, setYear] = useState(new Date().getFullYear())
   const [modal, setModal] = useState(null)
+  const [view, setView] = useState('grid') // 'grid' = calendar, 'list' = monthly list
   const [form, setForm] = useState({ name: '', date: '', type: 'PUBLIC' })
   const f = (k) => (e) => setForm({ ...form, [k]: e.target.value })
 
@@ -76,6 +77,16 @@ export default function HolidaysPage() {
           <p className="text-sm text-gray-500">{holidays.length} holidays for {year}</p>
         </div>
         <div className="flex gap-2">
+          <div className="inline-flex rounded-md ring-1 ring-gray-300 bg-white">
+            <button onClick={() => setView('grid')} title="Calendar grid"
+              className={`px-2.5 py-1.5 text-sm rounded-l-md ${view === 'grid' ? 'bg-primary-600 text-white' : 'text-gray-700 hover:bg-gray-50'}`}>
+              <Squares2X2Icon className="h-4 w-4" />
+            </button>
+            <button onClick={() => setView('list')} title="List"
+              className={`px-2.5 py-1.5 text-sm rounded-r-md ${view === 'list' ? 'bg-primary-600 text-white' : 'text-gray-700 hover:bg-gray-50'}`}>
+              <ListBulletIcon className="h-4 w-4" />
+            </button>
+          </div>
           <select value={year} onChange={(e) => setYear(Number(e.target.value))}
             className="rounded-md border-0 py-1.5 pl-3 pr-8 ring-1 ring-inset ring-gray-300 sm:text-sm">
             {[2024, 2025, 2026, 2027].map((y) => <option key={y} value={y}>{y}</option>)}
@@ -110,6 +121,8 @@ export default function HolidaysPage() {
         <div className="rounded-lg bg-white shadow p-12 text-center text-gray-500">
           No holidays added for {year}. {isAdmin() && <button onClick={openAdd} className="text-primary-600 underline ml-1">Add first holiday →</button>}
         </div>
+      ) : view === 'grid' ? (
+        <CalendarYearGrid year={year} holidays={holidays} onClick={isAdmin() ? openEdit : undefined} />
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {Object.entries(grouped).sort(([a], [b]) => a - b).map(([m, items]) => (
@@ -174,6 +187,72 @@ export default function HolidaysPage() {
           </form>
         </Modal>
       )}
+    </div>
+  )
+}
+
+/* ── 12-month calendar grid ─────────────────────────────────────────── */
+const FULL_MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December']
+const DOW = ['S','M','T','W','T','F','S']
+
+function CalendarYearGrid({ year, holidays, onClick }) {
+  // Map: 'YYYY-MM-DD' → holiday
+  const byDate = new Map()
+  holidays.forEach((h) => {
+    const iso = new Date(h.date).toISOString().slice(0, 10)
+    byDate.set(iso, h)
+  })
+
+  return (
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      {FULL_MONTHS.map((monthName, mIdx) => {
+        const firstDay = new Date(year, mIdx, 1)
+        const startOffset = firstDay.getDay() // 0..6 (Sun..Sat)
+        const daysInMonth = new Date(year, mIdx + 1, 0).getDate()
+        const cells = []
+        for (let i = 0; i < startOffset; i++) cells.push(null)
+        for (let d = 1; d <= daysInMonth; d++) cells.push(d)
+        while (cells.length % 7 !== 0) cells.push(null)
+
+        return (
+          <div key={mIdx} className="rounded-lg bg-white shadow overflow-hidden">
+            <div className="bg-gradient-to-r from-primary-600 to-primary-700 px-4 py-2">
+              <h3 className="text-sm font-semibold text-white">{monthName}</h3>
+            </div>
+            <div className="p-2">
+              <div className="grid grid-cols-7 text-center text-[10px] font-semibold text-gray-400 mb-1">
+                {DOW.map((d, i) => <div key={i} className="py-1">{d}</div>)}
+              </div>
+              <div className="grid grid-cols-7 gap-0.5">
+                {cells.map((d, i) => {
+                  if (d == null) return <div key={i} className="aspect-square" />
+                  const iso = `${year}-${String(mIdx + 1).padStart(2,'0')}-${String(d).padStart(2,'0')}`
+                  const h = byDate.get(iso)
+                  const dow = new Date(year, mIdx, d).getDay()
+                  const isWeekend = dow === 0 || dow === 6
+                  const tint = h
+                    ? (h.type === 'PUBLIC' ? 'bg-green-100 text-green-800 font-semibold ring-1 ring-green-300' :
+                       h.type === 'OPTIONAL' ? 'bg-amber-100 text-amber-800 font-semibold ring-1 ring-amber-300' :
+                       'bg-blue-100 text-blue-800 font-semibold ring-1 ring-blue-300')
+                    : isWeekend ? 'text-gray-400' : 'text-gray-700 hover:bg-gray-50'
+                  return (
+                    <button
+                      key={i}
+                      type="button"
+                      title={h?.name}
+                      onClick={() => h && onClick?.(h)}
+                      disabled={!h && !onClick}
+                      className={`aspect-square flex items-center justify-center rounded text-xs ${tint} ${h && onClick ? 'cursor-pointer' : 'cursor-default'}`}
+                    >
+                      {d}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          </div>
+        )
+      })}
     </div>
   )
 }
