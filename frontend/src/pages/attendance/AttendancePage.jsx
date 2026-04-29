@@ -45,7 +45,7 @@ function ProgressRing({ pct, size = 56, stroke = 4, color = '#4f46e5' }) {
 }
 
 export default function AttendancePage() {
-  const { user, isAdmin } = useAuth()
+  const { user, isAdmin, isManager } = useAuth()
   const qc = useQueryClient()
   const [page, setPage] = useState(1)
   const [month, setMonth] = useState(new Date().getMonth() + 1)
