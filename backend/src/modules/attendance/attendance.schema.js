@@ -10,6 +10,7 @@ export const clockOutSchema = z.object({
 
 export const regularizeSchema = z.object({
   attendanceId: z.number().int().positive(),
+  employeeId: z.number().int().positive().optional(),
   requestedClockIn: z.string().datetime().optional(),
   requestedClockOut: z.string().datetime().optional(),
   reason: z.string().min(1, "Reason is required"),

@@ -20,11 +20,11 @@ router.post("/clock-out", validate(clockOutSchema), clockOut);
 router.get("/today", getTodayStatus);
 router.get("/summary", getAttendanceSummary);
 router.get("/", validateQuery(attendanceQuerySchema), getAttendance);
-router.post("/manual", authorize("SUPER_ADMIN", "ADMIN"), validate(manualAttendanceSchema), markManualAttendance);
+router.post("/manual", authorize("SUPER_ADMIN", "ADMIN", "HR", "MANAGER"), validate(manualAttendanceSchema), markManualAttendance);
 
 router.post("/regularize", validate(regularizeSchema), applyRegularization);
 router.get("/regularize", getRegularizations);
-router.patch("/regularize/:id/approve", authorize("SUPER_ADMIN", "ADMIN", "MANAGER"), validate(approveRegularizationSchema), approveRegularization);
-router.patch("/regularize/:id/reject", authorize("SUPER_ADMIN", "ADMIN", "MANAGER"), validate(approveRegularizationSchema), rejectRegularization);
+router.patch("/regularize/:id/approve", authorize("SUPER_ADMIN", "ADMIN", "HR", "MANAGER"), validate(approveRegularizationSchema), approveRegularization);
+router.patch("/regularize/:id/reject", authorize("SUPER_ADMIN", "ADMIN", "HR", "MANAGER"), validate(approveRegularizationSchema), rejectRegularization);
 
 export default router;

@@ -186,34 +186,82 @@ export const markManualAttendance = async (req, res) => {
 
 export const applyRegularization = async (req, res) => {
   try {
-    const { attendanceId, requestedClockIn, requestedClockOut, reason } = req.body;
+    const { attendanceId, employeeId, requestedClockIn, requestedClockOut, reason } = req.body;
 
-    const emp = await prisma.employee.findFirst({ where: { userId: req.user.id } });
-    if (!emp) return R.notFound(res, "Employee not found");
+    const requester = await prisma.employee.findFirst({ where: { userId: req.user.id } });
+    if (!requester) return R.notFound(res, "Employee not found");
+    const isPrivileged = ["PLATFORM_ADMIN", "SUPER_ADMIN", "ADMIN", "HR", "MANAGER"].includes(req.user.role);
 
     const attendance = await prisma.attendance.findUnique({ where: { id: attendanceId } });
-    if (!attendance || attendance.employeeId !== emp.id) return R.forbidden(res, "Access denied");
+    if (!attendance) return R.notFound(res, "Attendance record not found");
+    if (!isPrivileged && attendance.employeeId !== requester.id) return R.forbidden(res, "Access denied");
+
+    if (employeeId && attendance.employeeId !== employeeId) {
+      return R.badRequest(res, "attendanceId does not belong to employeeId");
+    }
+    if (req.organisationId) {
+      const target = await prisma.employee.findUnique({
+        where: { id: attendance.employeeId },
+        select: { organisationId: true },
+      });
+      if (!target || target.organisationId !== req.organisationId) return R.forbidden(res, "Access denied");
+    }
 
     const existing = await prisma.attendanceRegularization.findFirst({
       where: { attendanceId, status: "PENDING" },
     });
     if (existing) return R.badRequest(res, "Regularization already pending for this date");
 
+    const requestedIn = requestedClockIn ? new Date(requestedClockIn) : undefined;
+    const requestedOut = requestedClockOut ? new Date(requestedClockOut) : undefined;
+
+    if (isPrivileged) {
+      const totalHours = calcHours(requestedIn, requestedOut);
+      const newStatus = requestedIn || requestedOut ? resolveStatus(totalHours) : attendance.status;
+
+      const reg = await prisma.attendanceRegularization.create({
+        data: {
+          attendanceId,
+          employeeId: attendance.employeeId,
+          requestedClockIn: requestedIn,
+          requestedClockOut: requestedOut,
+          reason,
+          status: "APPROVED",
+          approvedById: requester.id,
+          approvedOn: new Date(),
+        },
+      });
+
+      await prisma.attendance.update({
+        where: { id: attendanceId },
+        data: {
+          clockIn: requestedIn || undefined,
+          clockOut: requestedOut || undefined,
+          totalHours,
+          status: newStatus,
+          isRegularized: true,
+          regularizationReason: reason,
+        },
+      });
+
+      return R.created(res, reg, "Regularization applied successfully");
+    }
+
     const reg = await prisma.attendanceRegularization.create({
       data: {
         attendanceId,
-        employeeId: emp.id,
-        requestedClockIn: requestedClockIn ? new Date(requestedClockIn) : undefined,
-        requestedClockOut: requestedClockOut ? new Date(requestedClockOut) : undefined,
+        employeeId: requester.id,
+        requestedClockIn: requestedIn,
+        requestedClockOut: requestedOut,
         reason,
       },
     });
 
-    if (emp.managerId) {
-      const manager = await prisma.employee.findUnique({ where: { id: emp.managerId }, include: { user: true } });
+    if (requester.managerId) {
+      const manager = await prisma.employee.findUnique({ where: { id: requester.managerId }, include: { user: true } });
       if (manager?.user) {
         await prisma.notification.create({
-          data: { userId: manager.user.id, notificationType: "REGULARIZATION", title: "Attendance Regularization Request", message: `${emp.firstName} ${emp.lastName} has requested attendance regularization` },
+          data: { userId: manager.user.id, notificationType: "REGULARIZATION", title: "Attendance Regularization Request", message: `${requester.firstName} ${requester.lastName} has requested attendance regularization` },
         });
       }
     }
